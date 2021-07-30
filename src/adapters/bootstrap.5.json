@@ -1,0 +1,135 @@
+{
+    "_info": {
+        "head": {
+            "component": {
+                "_element": "head"
+            },
+            "children": [{
+                    "component": {
+                        "_element": "link",
+                        "rel": "stylesheet",
+                        "href": "https://cdn.jsdelivr.net/npm/bootstrap/dist/css/bootstrap.min.css"
+                    }
+                },
+                {
+                    "component": {
+                        "_element": "script",
+                        "defer": true,
+                        "src": "https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"
+                    }
+                }
+            ]
+        },
+        "flavors": {
+            "margin": {
+                "_type": "options",
+                "_target": "className",
+                "_values": [0, 1, 2, 3, 4, 5],
+                "_formats": ["m-*", "ms-*", "me-*", "mt-*", "mb-*", "mx-*", "my-*"]
+            },
+            "padding": {
+                "_type": "options",
+                "_target": "className",
+                "_values": [0, 1, 2, 3, 4, 5],
+                "_formats": ["m-*", "ms-*", "me-*", "mt-*", "mb-*", "mx-*", "my-*"]
+            },
+            "text": {
+                "_type": "text",
+                "_target": "children"
+            },
+            "style": {
+                "_type": "text",
+                "_target": "style"
+            },
+            "className": {
+                "_type": "text",
+                "_target": "className"
+            },
+            "id": {
+                "_type": "text",
+                "_target": "id"
+            }
+        }
+    },
+    "body": {
+        "_element": "body",
+        "children": "[...]"
+    },
+    "button": {
+        "_element": "button",
+        "className": "btn",
+        "_category": "input",
+        "_defaults": {
+            "text": "Button"
+        },
+        "_variant": {
+            "colors": {
+                "_type": "options",
+                "_target": "className",
+                "_default": "primary",
+                "_values": ["primary", "secondary", "danger", "warning", "success", "dark", "light"],
+                "_formats": ["btn-*"]
+            },
+            "type": {
+                "_type": "options",
+                "_target": "type",
+                "_default": "submit",
+                "_values": ["submit", "reset", "button"]
+            }
+        }
+    },
+    "card": {
+        "className": "card",
+        "children": {
+            "className": "card-body",
+            "children": "..."
+        }
+    },
+    "container": {
+        "children": "...",
+        "_variant": {
+            "width": {
+                "_type": "options",
+                "_target": "className",
+                "_default": "container",
+                "_values": ["container", "container-fluid"]
+            },
+            "maxWidth": {
+                "_type": "options",
+                "_target": "style",
+                "_values": {
+                    "xs": {
+                        "maxWidth": "100px"
+                    }
+                }
+            }
+        }
+    },
+    "div": {
+        "_element": "div",
+        "children": "[...]"
+    },
+    "rows": {
+        "children": "[...columns]",
+        "className": "row",
+        "_variant": {
+            "gutter": {
+                "_type": "options",
+                "_target": "style",
+                "_values": [0, 1, 2, 3, 4, 5],
+                "_formats": ["g-*"]
+            }
+        }
+    },
+    "columns": {
+        "children": "...",
+        "_hidden": true,
+        "_variant": {
+            "width": {
+                "_type": "options",
+                "_values": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
+                "_formats": ["col", "col-auto", "col-xs-*", "col-md-*", "col-lg-*", "col-xl-*"]
+            }
+        }
+    }
+}
