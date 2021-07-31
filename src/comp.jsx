@@ -1,13 +1,14 @@
-import { List, ListItem, Paper } from '@material-ui/core';
+import { List } from '@material-ui/core';
 import React from 'react';
 import { Droppable } from 'react-beautiful-dnd';
 import ReactDOMServer from 'react-dom/server';
 import { HierarchyItem } from './styles';
+import { expandStyleString, isTagOmitted } from './utils';
 
 export const getCompStyle = (snapshot, selected) => {
     return {
         backgroundColor: snapshot.isDraggingOver ? 'lightblue' : (selected ? 'lightyellow' : 'gainsboro'),
-        minHeight: '100px',
+        minHeight: '50px',
     }
 }
 
@@ -19,7 +20,10 @@ const combineAttr = (name, val, dest) => {
             dest.className = dest.className ? dest.className + " " + val : val;
             return;
         case "style":
-            dest.style = dest.style ? dest.style + " " + val : val;
+            dest.style = {
+                ...(dest.style || {}),
+                ...expandStyleString(val)
+            }
             return;
         default:
             dest[name] = val;
@@ -38,8 +42,8 @@ const HtmlComponent = ({ elem, info }) => {
             combineAttr(key, value, attr);
         }
     }
-    if (comp?.attributes) {
-        for (const [key, value] of Object.entries(comp.attributes)) {
+    if (comp?.properties) {
+        for (const [key, value] of Object.entries(comp.properties)) {
             combineAttr(key, value, attr);
         }
     }
@@ -57,13 +61,14 @@ const HtmlComponent = ({ elem, info }) => {
 
     const element = attr.element || 'div';
     delete attr.element;
-
+    elem.renderedElem = element;
+    elem.renderedProps = attr;
     return React.createElement(
         element,
         attr,
-        ...(elem.children?.map((x, i) => (
+        ...((!isTagOmitted(element) && elem.children?.map((x, i) => (
             <HtmlComponent elem={x} info={info} key={x.id || i} />
-        )) || [])
+        ))) || [])
     );
 }
 
@@ -89,20 +94,24 @@ export const DrawComponent = ({ data, info, selection, setSelection }) => {
             e.stopPropagation();
             setSelection(data.id)
         }}>
-            <span>{selection === data.id && "▶"} {comp?.name || data.attributes.element || "div"}</span>
-            <Droppable droppableId={data.id} isDropDisabled={disallowDrop}>
-                {(provided, snapshot) => (
-                    <List
-                        ref={provided.innerRef}
-                        style={getCompStyle(snapshot, selection === data.id)}
-                        {...provided.droppableProps}
-                    >
-                        {(data.children).map(x => <DrawComponent info={info} data={x} key={x.id}
-                            selection={selection} setSelection={setSelection} />)}
-                        {provided.placeholder}
-                    </List>
-                )}
-            </Droppable>
+            <span>{selection === data.id && "▶"} {comp?.name || data.renderedElem}
+                <span className="id">{data.renderedProps?.id && '#' + data.renderedProps.id}</span>
+            </span>
+            {(!isTagOmitted(data.renderedElem) && (data.children?.length > 0 || !disallowDrop)) &&
+                <Droppable droppableId={data.id} isDropDisabled={disallowDrop}>
+                    {(provided, snapshot) => (
+                        <List
+                            ref={provided.innerRef}
+                            style={getCompStyle(snapshot, selection === data.id)}
+                            {...provided.droppableProps}
+                        >
+                            {(data.children).map(x => <DrawComponent info={info} data={x} key={x.id}
+                                selection={selection} setSelection={setSelection} />)}
+                            {provided.placeholder}
+                        </List>
+                    )}
+                </Droppable>
+            }
         </HierarchyItem>
     )
 }

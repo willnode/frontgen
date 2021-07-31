@@ -10,6 +10,7 @@ export const AppSidebar = styled.div `
     width: 25%;
     background: whitesmoke;
     padding: 10px 0;
+    max-height: 100vh;
 `;
 
 
@@ -23,7 +24,6 @@ const paperCss = `
 export const PickerContainer = styled.div `
     display: flex;
     flex-wrap: wrap;
-    min-height: 100px;
 `;
 
 /**
@@ -48,11 +48,13 @@ export const PickerItem = styled.div `
 `;
 
 export const HierarchyContainer = styled.div `
-    width: calc(100% - 8px);
+    width: 100%;
+    padding: 0 8px;
     margin-top: 10px;
     margin-bottom: 4px;
-    margin-right: 8px;
-    userSelect: none;
+    user-select: none;
+    flex-grow: 1;
+    overflow-y: auto;
 `;
 
 export const HierarchyItem = styled.div `
@@ -62,8 +64,12 @@ export const HierarchyItem = styled.div `
     margin-left: 8px;
     ${() => paperCss}
     & > span {
-        margin: 2px 8px;
+        margin: 0px 8px;
+        padding: 4px;
         display: block;
+    }
+    & > span .id {
+        color: #0009;
     }
 `;
 

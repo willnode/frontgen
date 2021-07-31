@@ -1,3 +1,4 @@
+import React from "react";
 
 export interface AppElement {
     attributes: {
@@ -11,14 +12,16 @@ export interface AppElement {
     // generated
     id: string
     parent?: string
+    renderedProps?: any
+    renderedElem?: string
 }
 
 export interface AppComponent {
-    attributes?: {
-        [prop: string]: string
-    }
     defaults?: {
         [prop: string]: any
+    }
+    properties?: {
+        [prop: string]: string
     }
     variants?: {
         [prop: string]: AppVariant

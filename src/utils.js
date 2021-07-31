@@ -44,7 +44,7 @@ const extractVariants = (v) => {
     Object.entries(v).forEach(([vk, vv]) => {
         v[vk] = {
             ...vv,
-            default: vv.type == "options" && vv.default && !Array.isArray(vv.default) ? [vv.default] : vv.default,
+            default: vv.type === "options" && vv.default && !Array.isArray(vv.default) ? [vv.default] : vv.default,
             name: vk,
             ...(vv.formats ? {
                 formatExpands: vv.formats
@@ -70,18 +70,44 @@ export const expandAdapter = (config) => {
         flavors: extractVariants(config.flavors),
         components: Object.entries(config.components)
             .map(([k, v]) => extractComponent(k, v))
-            .reduce((a, x) => (a[x.name] = x, a), {})
+            .reduce((a, x) => {
+                a[x.name] = x;
+                return a
+            }, {})
     };;
 }
 
 /**
  * @param {import("./types").AppElement} body
- * @param {Object<string, import("./types").AppElement>} dict
+ * @param {(b: import("./types").AppElement, p: string) => void} action
  */
-function traverseIndexes(body, dict) {
-    dict[body.id] = body;
+export function traverseIndexes(body, action, parent = null) {
+    action(body, parent);
     for (const child of body.children) {
-        traverseIndexes(child, dict);
+        traverseIndexes(child, action, body.id);
+    }
+}
+
+function camelCase(str) {
+    return str.replace(/-([a-z])/g, function (g) {
+        return g[1].toUpperCase();
+    });
+}
+/**
+ * @param {string} str
+ * @returns {Object<string, any>}
+ */
+export function expandStyleString(str) {
+    try {
+        return str.split(";")
+            .reduce((o, l) => {
+                var s = l.split(":", 2);
+                if (s.length === 2)
+                    o[camelCase(s[0])] = s[1].trim();
+                return o;
+            }, {});
+    } catch (error) {
+        return {};
     }
 }
 /**
@@ -103,7 +129,9 @@ export function initiateOpen(workspace, setIter) {
                      * @type {Object<string, import("./types").AppElement>}
                      */
                     var d = {};
-                    traverseIndexes(c, d);
+                    traverseIndexes(c, (b) => {
+                        d[b.id] = b;
+                    });
                     workspace.body = c;
                     workspace.indexes = d;
                     setIter();
@@ -124,6 +152,7 @@ export function initiateOpen(workspace, setIter) {
         input.click();
     }
 }
+
 export function initiateDownload(filename, type, text) {
     var pom = document.createElement('a');
     pom.setAttribute('href', 'data:' + type + ';charset=utf-8,' + encodeURIComponent(text));
@@ -136,4 +165,28 @@ export function initiateDownload(filename, type, text) {
     } else {
         pom.click();
     }
+}
+
+// https://github.com/facebook/react/blob/main/packages/react-dom/src/shared/omittedCloseTags.js
+const omittedCloseTags = {
+    area: true,
+    base: true,
+    br: true,
+    col: true,
+    embed: true,
+    hr: true,
+    img: true,
+    input: true,
+    keygen: true,
+    link: true,
+    meta: true,
+    param: true,
+    source: true,
+    track: true,
+    wbr: true,
+    // NOTE: menuitem's close tag should be omitted, but that causes problems.
+  };
+
+export function isTagOmitted(tag) {
+    return omittedCloseTags[tag] || false;
 }

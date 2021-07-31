@@ -12,8 +12,20 @@ export const PickerDrawer = ({ adapter }) => {
         ref={provided.innerRef}
         {...provided.droppableProps}
       >
+        <Draggable draggableId="___" index={0}>
+            {(provided, snapshot) => (
+              <PickerItem
+                ref={provided.innerRef}
+                {...provided.draggableProps}
+                {...provided.dragHandleProps}
+                dragging={snapshot.isDragging}
+                style={provided.draggableProps.style}>
+                  [custom]
+              </PickerItem>
+            )}
+          </Draggable>
         {Object.values(adapter.components).map((x, i) => (
-          <Draggable key={x.name} draggableId={x.name} index={i}>
+          <Draggable key={x.name} draggableId={x.name} index={i + 1}>
             {(provided, snapshot) => (
               <PickerItem
                 ref={provided.innerRef}

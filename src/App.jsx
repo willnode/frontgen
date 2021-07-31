@@ -2,11 +2,10 @@ import { useMemo, useRef, useState } from 'react';
 import './App.css';
 import boostrap from './adapters/bootstrap.5.json';
 import { DragDropContext } from 'react-beautiful-dnd';
-import { expandAdapter, shrinkFormat } from './utils';
+import { expandAdapter, shrinkFormat, traverseIndexes } from './utils';
 import { DrawComponent, renderHtmlComponent } from './comp';
-import { useEffect } from 'react';
 import { PickerDrawer } from './picker';
-import { AppContainer, AppSidebar, AppWorkspace, HierarchyContainer, IframePlayground } from './styles';
+import { AppContainer, AppSidebar, HierarchyContainer } from './styles';
 import { DrawInspector } from './inspector';
 import { DisplayWindow } from './display';
 
@@ -56,13 +55,17 @@ const expandElement = (workspace, comp, parent, children = [], attributes = {}, 
       /** @type {import('./types').AppElement[]} */
       var cc = JSON.parse(JSON.stringify(comp.defaults.children));
       delete r.attributes.children;
-      cc.forEach(c => {
-        Object.assign(c, expandElement(workspace,
-          workspace.adapter.components[c.component],
-          r.id, c.children, c.attributes, c.properties))
-      });
       r.children.push(...cc);
     }
+  }
+  if (r.children.length > 0) {
+    r.children.forEach(c => {
+      traverseIndexes(c, (cc, p) => {
+        Object.assign(cc, expandElement(workspace,
+          workspace.adapter.components[cc.component],
+          p || r.id, cc.children, cc.attributes, cc.properties))
+      });
+    });
   }
   workspace.indexes[r.id] = r;
   return r;
@@ -90,6 +93,7 @@ function App() {
 
   const workspace = workspaceRef.current;
   const [select, setSelect] = useState(workspace.body.id);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const html = useMemo(() => renderHtmlComponent(workspace.adapter, workspace.body), [iter]);
 
   const addComponent = (component) => {
@@ -122,8 +126,35 @@ function App() {
     var c = workspace.indexes[select];
     if (!c.parent) { alert("Can't delete this"); return; }
     var p = workspace.indexes[c.parent];
-    p.children.splice(p.children.findIndex((e) => e.id === c.id), 1);
-    delete workspace.indexes[select];
+    var i = p.children.findIndex((e) => e.id === c.id);
+    traverseIndexes(p.children.splice(i, 1)[0], (b) => {
+      delete workspace.indexes[b.id];
+    });
+    setIter(iter + 1);
+  }
+  const onClone = () => {
+    var c = workspace.indexes[select];
+    if (!c.parent) { alert("Can't clone this"); return; }
+    var p = workspace.indexes[c.parent];
+    var i = p.children.findIndex((e) => e.id === c.id);
+    var cc = JSON.parse(JSON.stringify(c));
+    traverseIndexes(cc, (b) => {
+      b.id = generateId();
+      workspace.indexes[b.id] = b;
+    });
+    p.children.splice(i + 1, 0, cc);
+    setSelect(cc.id);
+    setIter(iter + 1);
+  }
+  const onMove = (rel) => {
+    var c = workspace.indexes[select];
+    if (!c.parent) { alert("Can't move this"); return; }
+    var p = workspace.indexes[c.parent];
+    var i = p.children.findIndex((e) => e.id === c.id);
+    var newi = Math.max(0, Math.min(p.children.length - 1, i + rel))
+    if (newi === i) return;
+    p.children[i] = p.children[newi];
+    p.children[newi] = c;
     setIter(iter + 1);
   }
 
@@ -139,7 +170,7 @@ function App() {
       </AppSidebar>
       <DisplayWindow html={html} workspace={workspace} setIter={() => setIter(iter + 1)} />
       <AppSidebar>
-        <DrawInspector elem={select && workspace.indexes[select]} info={workspace.adapter} setProp={onSetVal} onDel={onDel} />
+        <DrawInspector elem={select && workspace.indexes[select]} info={workspace.adapter} setProp={onSetVal} onClone={onClone} onDel={onDel} onMove={onMove} />
       </AppSidebar>
     </AppContainer >
   );

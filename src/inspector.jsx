@@ -45,7 +45,7 @@ const DrawInspectorItem = ({ elem, prop, val, setVal }) => {
                                         {prop.formats.map((x, k) => <option key={x} value={k + 1}>{x}</option>)}
                                     </select>
                                     {
-                                        prop.multiple && i == 0 && <button disabled={unselected} onClick={() => {
+                                        prop.multiple && i === 0 && <button disabled={unselected} onClick={() => {
                                             val.push(null);
                                             setVal(elem, prop, val);
                                         }}>+</button>
@@ -82,16 +82,22 @@ const DrawInspectorItem = ({ elem, prop, val, setVal }) => {
 }
 
 /**
- * @param {{info: import('./types').AppAdapter, elem: import('./types').AppElement, setProp: Function, onDel: Function}} props
+ * @param {{info: import('./types').AppAdapter, elem: import('./types').AppElement, setProp: Function, onDel: Function, onClone: Function, onMove: Function}} props
  */
-export const DrawInspector = ({ elem, info, setProp, onDel }) => {
+export const DrawInspector = ({ elem, info, setProp, onDel, onClone, onMove }) => {
     if (!elem) return <></>;
     var comp = info.components[elem.component];
-    return comp ? (<div>
-        {comp.variants && Object.values(comp.variants).map(x => <DrawInspectorItem info={info} elem={elem} prop={x} key={x.name} val={elem.attributes[x.name]} setVal={setProp} />)}
+    return (<div>
+        {comp && comp.variants && Object.values(comp.variants).map(x => <DrawInspectorItem info={info} elem={elem} prop={x} key={x.name} val={elem.attributes[x.name]} setVal={setProp} />)}
         <hr />
         {Object.values(info.flavors).map(x => <DrawInspectorItem info={info} elem={elem} prop={x} key={x.name} val={elem.attributes[x.name]} setVal={setProp} />)}
         <hr />
-        <button onClick={() => onDel()}>Delete</button>
-    </div>) : <></>
+        {elem.parent && <>
+            <button onClick={() => onMove(-1)}>Move Up</button>
+            <button onClick={() => onMove(1)}>Move Down</button>
+            <button onClick={() => onClone()}>Clone</button>
+            <button onClick={() => onDel()}>Delete</button>
+        </>
+        }
+    </div>)
 }
