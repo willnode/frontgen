@@ -1,62 +1,139 @@
-const parseChildrenDesign = (comp) => {
-    if (typeof comp.children === "string" && comp.children.indexOf("...") !== -1) {
-        let c = comp.children;
-        const multiple = c.startsWith('[') && c.endsWith(']');
-        if (multiple) {
-            c = c.substr(1, c.length - 2);
-        }
-        return {
-            multiple,
-            component: comp.children.substr(3),
-        };
-    } else if (comp.children != null && typeof comp.children === 'object') {
-        return parseChildrenDesign(comp.children);
-    } else {
-        return null;
-    }
-}
 export const shrinkFormat = (value, expandedFormat) => {
-    return expandedFormat[0] + value + expandedFormat[1];
-}
-export const expandFormat = (value, formats, expandedFormats) => {
-    expandedFormats.forEach((x, i) => {
-        if (value.startsWith(x[0]) && value.endsWith(x[1])) {
-            return [value.substring(x[0].length, x[1].length), formats[i]];
+    return value.map(value => {
+        switch (expandedFormat.length) {
+            case 1:
+                return expandedFormat[0];
+            case 2:
+                return expandedFormat[0] + value + expandedFormat[1];
+            default:
+                return "";
         }
     });
-    return [value, formats[0]];
+}
+export const expandFormat = (value, expandedFormats) => {
+    if (value == null)
+        return [null, null];
+    let i = 0;
+    for (const x of expandedFormats) {
+        if (x.length === 1 && value === x[0]) {
+            return ["", i];
+        } else if (value.startsWith(x[0]) && value.endsWith(x[1])) {
+            return [value.substring(x[0].length, value.length - x[1].length), i];
+        }
+        i++;
+    }
+    return [value, 0];
 }
 /**
- * @returns {{_info: any, _components: Object<string, any>}}
+ * @return {import("./types").AppComponent}
  */
-export const extractAdapter = (config) => {
+const extractComponent = (k, v) => {
+    var r = {
+        ...v,
+        name: k,
+    }
+    if (r.variants) {
+        r.variants = extractVariants(r.variants);
+    }
+    return r;
+}
+/**
+ * @return {Object<string, import("./types").AppVariant>}
+ */
+const extractVariants = (v) => {
+    Object.entries(v).forEach(([vk, vv]) => {
+        v[vk] = {
+            ...vv,
+            default: vv.type == "options" && vv.default && !Array.isArray(vv.default) ? [vv.default] : vv.default,
+            name: vk,
+            ...(vv.formats ? {
+                formatExpands: vv.formats
+                    .map(f => f.split("*", 2)),
+            } : {
+                formats: ["*"],
+                formatExpands: [
+                    ["", ""]
+                ]
+            }),
+            multiple: vv.formats && vv.formats.length > 1,
+        };
+    });
+    return v;
+}
+/**
+ * @returns {import("./types").AppAdapter}
+ */
+export const expandAdapter = (config) => {
     return {
-        _info: config._info,
-        _components: ((() => {
-            const x = {};
-            Object.entries(config)
-                .filter(([k, v]) => !k.startsWith('_'))
-                .forEach(([k, v]) => {
-                    x[k] = {
-                        ...v,
-                        _name: k,
-                        _children: parseChildrenDesign(v),
-                    }
-                    if (x[k]._variant) {
-                        Object.entries(x[k]._variant).forEach(([vk, vv]) => {
-                            x[k]._variant[vk] = {
-                                ...vv,
-                                ...(vv._formats ? {
-                                    _formatExpands: vv._formats
-                                        .map(f => f.split("*", 2)),
-                                } : {}),
-                                _name: vk,
-                            };
-                        });
-                    }
-                    delete x[k].children;
-                });
-            return x;
-        })())
+        head: config.head,
+        body: config.body,
+        flavors: extractVariants(config.flavors),
+        components: Object.entries(config.components)
+            .map(([k, v]) => extractComponent(k, v))
+            .reduce((a, x) => (a[x.name] = x, a), {})
     };;
+}
+
+/**
+ * @param {import("./types").AppElement} body
+ * @param {Object<string, import("./types").AppElement>} dict
+ */
+function traverseIndexes(body, dict) {
+    dict[body.id] = body;
+    for (const child of body.children) {
+        traverseIndexes(child, dict);
+    }
+}
+/**
+ * @param {import("./types").AppWorkspace} workspace
+ */
+export function initiateOpen(workspace, setIter) {
+    var input = document.createElement('input');
+    input.setAttribute('type', 'file');
+    input.setAttribute('accept', 'application/json');
+    input.onchange = _ => {
+        // you can use this method to get file and perform respective operations
+        let files = Array.from(input.files);
+        if (files.length === 1) {
+            const reader = new FileReader()
+            reader.onload = event => {
+                try {
+                    var c = JSON.parse("" + event.target.result);
+                    /**
+                     * @type {Object<string, import("./types").AppElement>}
+                     */
+                    var d = {};
+                    traverseIndexes(c, d);
+                    workspace.body = c;
+                    workspace.indexes = d;
+                    setIter();
+                } catch (error) {
+                    alert("Failed to read");
+                }
+                // desired file content
+            }
+            reader.onerror = error => alert("Failed to open")
+            reader.readAsText(files[0])
+        }
+    };
+    if (document.createEvent) {
+        var event = document.createEvent('MouseEvents');
+        event.initEvent('click', true, true);
+        input.dispatchEvent(event);
+    } else {
+        input.click();
+    }
+}
+export function initiateDownload(filename, type, text) {
+    var pom = document.createElement('a');
+    pom.setAttribute('href', 'data:' + type + ';charset=utf-8,' + encodeURIComponent(text));
+    pom.setAttribute('download', filename);
+
+    if (document.createEvent) {
+        var event = document.createEvent('MouseEvents');
+        event.initEvent('click', true, true);
+        pom.dispatchEvent(event);
+    } else {
+        pom.click();
+    }
 }
