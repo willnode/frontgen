@@ -25,12 +25,13 @@ function toggleSrcView() {
     srcView = !srcView;
     if (srcView) {
         $('#workarea').hide();
-        $('#worksrc').val(formatHTML(unformatHTML(workarea().html())));
-        $('#worksrc').show();
+        let html = html_beautify((workdoc().documentElement.innerHTML));
+        codeMirror.setValue(html)
+        $(".CodeMirror").show();
     } else {
-        workarea().html($('#worksrc').val() || '<div></div>');
+        workdoc().documentElement.innerHTML = (codeMirror.getValue());
         $('#workarea').show();
-        $('#worksrc').hide();
+        $('.CodeMirror').hide();
     }
     $('#btn-srcview').toggleClass('active', srcView);
 }
@@ -67,6 +68,31 @@ function formatDoc(sCmd, sValue) {
             if (s && s.tagName !== 'BODY') {
                 s.remove();
             }
+            break;
+        case 'formatblock':
+            var s = selectedElementUpward();
+            if (s && s.tagName === 'BODY') {
+                var sel = workdoc().getSelection().getRangeAt(0);
+                if (sel && !sel.collapsed) {
+                    var n = workdoc().createElement(sValue);
+                    sel.surroundContents(n);
+                    selUpward = 0;
+                    selectedElement = n;
+                    updateInspector();
+                }
+                return;
+            }
+            /** @type {HTMLElement} */
+            var n = workdoc().createElement(sValue);
+            n.attributes = s.attributes;
+            [...s.attributes].forEach(attr => {
+                n.setAttribute(attr.nodeName, attr.nodeValue)
+            });
+            n.innerHTML = s.innerHTML;
+            $(s).replaceWith(n);
+            selUpward = 0;
+            selectedElement = n;
+            updateInspector();
             break;
         default:
             workdoc().execCommand(sCmd, false, sValue);
@@ -197,6 +223,29 @@ function setSelUpward(offset) {
     updateInspector();
 }
 
+function setMoveUpward(offset) {
+    var sel = selectedElementUpward();
+    if (!sel || sel.tagName === 'BODY')
+        return;
+    if (offset > 0) {
+        const next = sel.nextElementSibling;
+        if (!next) {
+            setSelUpward(1);
+            return;
+        } else {
+            sel.parentElement.insertBefore(next, sel);
+        }
+    } else {
+        const prev = sel.previousElementSibling;
+        if (!prev) {
+            setSelUpward(1);
+            return;
+        } else {
+            sel.parentElement.insertBefore(sel, prev);
+        }
+    }
+}
+
 function setClear() {
     if (selectedElement) {
         let selected = selectedElementUpward();
@@ -209,15 +258,24 @@ function setClear() {
         selectedElement = null;
     }
 }
-
+let codeMirror;
 // main loop
 $(function () {
     // prepare UI
     $('#worksrc').hide();
     $('#in-elem,#in-class,#in-style').on('input', applyInspector);
     updateInspector();
+    codeMirror = CodeMirror.fromTextArea($('#worksrc')[0], {
+        lineNumbers: true,
+        mode: "htmlmixed",
+        extraKeys: {
+            "Ctrl-Space": "autocomplete"
+        },
+    });
+
     // load adapter
     import('../adapters/bootstrap.js').then((module) => {
+
         listComponents = module.components;
         $('#workarea')[0].srcdoc = module.template;
         $('#comps').append(...renderComponents(listComponents))

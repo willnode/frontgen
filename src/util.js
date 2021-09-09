@@ -234,7 +234,7 @@ var NodeListCommand = Undo.Command.extend({
         }
         for (let i = 0; i < this.removed.length; i++) {
             const element = this.removed[i];
-            this.target.insertBefore(i.before, element);
+            this.target.insertBefore(element, i.before);
         }
     },
     redo: function () {
@@ -244,7 +244,7 @@ var NodeListCommand = Undo.Command.extend({
         }
         for (let i = 0; i < this.added.length; i++) {
             const element = this.added[i];
-            this.target.insertBefore(i.before, element);
+            this.target.insertBefore(element, i.before);
         }
     }
 });

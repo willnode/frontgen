@@ -1,3 +1,6 @@
+body {
+    overflow: hidden;
+}
 #toolbar,
 #inspector {
     background: lightblue;
@@ -11,17 +14,31 @@
 #toolbar>button.active {
     background: lime;
 }
-
-#workspace>* {
+#workspace {
+    flex-grow: 1;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+}
+.CodeMirror {
+    position: absolute;
+    top: 0;
+    height: 100vh;
+    left: 0;
+    right: 0;
+    z-index: 2;
+}
+#workarea  {
     height: 100vh;
     width: 100%;
     overflow-y: auto;
 }
 
 #tooltxt {
-    height: inherit;
+    height: min-content;
     overflow-y: visible;
-}
+   }
 
 #tooltxt>* {
     flex-grow: 0;

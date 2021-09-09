@@ -8,12 +8,23 @@
     <title>Document</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" />
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="/style.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.62.3/codemirror.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.62.3/addon/hint/show-hint.min.css" />
+    <link href="./style.css" rel="stylesheet">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="./src/undo.js"></script>
     <script src="./src/util.js"></script>
     <script src="./src/main.js"></script>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/js-beautify/1.14.0/beautify-html.min.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.62.3/codemirror.min.js"></script>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.62.3/addon/hint/show-hint.min.js"></script>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.62.3/addon/hint/xml-hint.min.js"></script>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.62.3/addon/hint/html-hint.min.js"></script>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.62.3/mode/xml/xml.min.js"></script>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.62.3/mode/javascript/javascript.min.js"></script>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.62.3/mode/css/css.min.js"></script>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.62.3/mode/htmlmixed/htmlmixed.min.js"></script>
 </head>
 
 <body>
@@ -22,57 +33,16 @@
         <div class="me-1 d-flex flex-column fa-2x" id="toolbar">
             <button onclick="toggleSrcView()" id="btn-srcview" title="Toggle Source Code"><i
                     class="fas fa-file-code"></i></button>
-            <button onclick="setSelUpward(1)" id="btn-srcview" title="Move Selection Upward"><i
-                    class="fas fa-arrow-up"></i></button>
-            <button onclick="setSelUpward(-1)" id="btn-srcview" title="Move Selection Downward"><i
-                    class="fas fa-arrow-down"></i></button>
-            <button onclick="setClear()" id="btn-srcview" title="Delete selected"><i class="fas fa-trash"></i></button>
+            <button onclick="setSelUpward(1)" title="Select Upward"><i class="fas fa-arrow-up"></i></button>
+            <button onclick="setSelUpward(-1)" title="Select Downward"><i class="fas fa-arrow-down"></i></button>
+            <button onclick="setClear()" title="Delete selected"><i class="fas fa-trash"></i></button>
+            <button onclick="setMoveUpward(-1)" title="Move Selection Upward"><i class="fas fa-chevron-up"></i></button>
+            <button onclick="setMoveUpward(1)" title="Move Selection Downward"><i
+                    class="fas fa-chevron-down"></i></button>
         </div>
-        <div id="workspace" class="flex-grow-1">
+        <div id="workspace">
 
             <div id="tooltxt" class="btn-group">
-                <!-- <select onchange="formatDoc('formatblock',this[this.selectedIndex].value);this.selectedIndex=0;">
-                    <option selected>- formatting -</option>
-                    <option value="h1">Title 1 &lt;h1&gt;</option>
-                    <option value="h2">Title 2 &lt;h2&gt;</option>
-                    <option value="h3">Title 3 &lt;h3&gt;</option>
-                    <option value="h4">Title 4 &lt;h4&gt;</option>
-                    <option value="h5">Title 5 &lt;h5&gt;</option>
-                    <option value="h6">Subtitle &lt;h6&gt;</option>
-                    <option value="p">Paragraph &lt;p&gt;</option>
-                    <option value="pre">Preformatted &lt;pre&gt;</option>
-                </select>
-                <select onchange="formatDoc('fontname',this[this.selectedIndex].value);this.selectedIndex=0;">
-                    <option class="heading" selected>- font -</option>
-                    <option>Arial</option>
-                    <option>Arial Black</option>
-                    <option>Courier New</option>
-                    <option>Times New Roman</option>
-                </select>
-                <select onchange="formatDoc('fontsize',this[this.selectedIndex].value);this.selectedIndex=0;">
-                    <option class="heading" selected>- size -</option>
-                    <option value="1">Very small</option>
-                    <option value="2">A bit small</option>
-                    <option value="3">Normal</option>
-                    <option value="4">Medium-large</option>
-                    <option value="5">Big</option>
-                    <option value="6">Very big</option>
-                    <option value="7">Maximum</option>
-                </select>
-                <select onchange="formatDoc('forecolor',this[this.selectedIndex].value);this.selectedIndex=0;">
-                    <option class="heading" selected>- color -</option>
-                    <option value="red">Red</option>
-                    <option value="blue">Blue</option>
-                    <option value="green">Green</option>
-                    <option value="black">Black</option>
-                </select>
-                <select onchange="formatDoc('backcolor',this[this.selectedIndex].value);this.selectedIndex=0;">
-                    <option class="inherit" selected>- background -</option>
-                    <option value="">Clear</option>
-                    <option value="red">Red</option>
-                    <option value="green">Green</option>
-                    <option value="black">Black</option>
-                </select> -->
                 <button class="btn btn-sm btn-outline-secondary" id="undo" onclick="formatDoc('undo');"><i
                         class="fas fa-undo"></i></button>
                 <button class="btn btn-sm btn-outline-secondary" id="redo" onclick="formatDoc('redo');"><i
@@ -144,7 +114,7 @@
                         class="fas fa-image"></i></button>
             </div>
             <iframe id="workarea" sandbox="allow-same-origin allow-scripts"></iframe>
-            <textarea id="worksrc"></textarea>
+            <textarea id="worksrc" class="font-monospace"></textarea>
         </div>
         <div class="ms-1 p-1" id="inspector">
             <h5 id="elem"></h5>
