@@ -1,0 +1,50 @@
+#toolbar,
+#inspector {
+    background: lightblue;
+    height: 100vh;
+}
+
+#toolbar>button {
+    background: white;
+}
+
+#toolbar>button.active {
+    background: lime;
+}
+
+#workspace>* {
+    height: 100vh;
+    width: 100%;
+    overflow-y: auto;
+}
+
+#tooltxt {
+    height: inherit;
+    overflow-y: visible;
+}
+
+#tooltxt>* {
+    flex-grow: 0;
+}
+
+#util {
+    position: relative;
+}
+
+.modal-dialog {
+    position: fixed;
+    width: 100%;
+    margin: 0;
+    padding: 10px;
+}
+
+#props label, form label {
+    display: flex;
+}
+
+#props span, form span {
+    margin-right: auto;
+}
+.accordion-button {
+    padding: 0.5rem 1rem;
+}
