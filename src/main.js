@@ -17,6 +17,9 @@ let selectedElement;
     }) => string;
 }[]} */
 let listComponents;
+let highlightedElement;
+/** @type {HTMLElement} */
+let highlightBeacon;
 const workarea = () => $('#workarea').contents().find('body');
 /** @type {() => Document} */
 const workdoc = () => $('#workarea')[0].contentWindow.document;
@@ -25,11 +28,14 @@ function toggleSrcView() {
     srcView = !srcView;
     if (srcView) {
         $('#workarea').hide();
-        let html = html_beautify((workdoc().documentElement.innerHTML));
-        codeMirror.setValue(html)
+        setHighlightElement(null);
+        let html = generateCleanExportedHtml();
+        codeMirror.setValue(html);
+        setTimeout(() => codeMirror.refresh(), 0)
         $(".CodeMirror").show();
     } else {
         workdoc().documentElement.innerHTML = (codeMirror.getValue());
+        setHighlightElement(selectedElementUpward());
         $('#workarea').show();
         $('.CodeMirror').hide();
     }
@@ -68,6 +74,22 @@ function formatDoc(sCmd, sValue) {
             if (s && s.tagName !== 'BODY') {
                 s.remove();
             }
+            break;
+        case 'copy':
+        case 'cut':
+            var cut = sCmd === 'cut';
+            var r = workdoc().getSelection().getRangeAt(0);
+            let t = r[cut ? 'extractContents' : 'cloneContents']();
+            window.navigator.clipboard.writeText($('<div>').append(t).html());
+            break;
+        case 'paste':
+            var r = workdoc().getSelection().getRangeAt(0);
+            window.navigator.clipboard.readText().then(
+                x => {
+                    r.deleteContents();
+                    r.insertNode($('<div>').html(x)[0]);
+                }
+            )
             break;
         case 'formatblock':
             var s = selectedElementUpward();
@@ -117,10 +139,40 @@ const selectedElementUpward = () => {
     return selected;
 }
 
+function setHighlightElement( /** @type {HTMLElement} */ el) {
+    if (!el || el.tagName === 'HTML' || el.tagName === 'BODY')
+        el = null;
+    highlightedElement = el;
+    if (!el) {
+        if (highlightBeacon) {
+            highlightBeacon.remove();
+            highlightBeacon = null;
+        }
+    } else {
+        if (!highlightBeacon) {
+            highlightBeacon = workdoc().createElement('div');
+            workarea().append(highlightBeacon);
+            highlightBeacon.style.position = 'absolute';
+            highlightBeacon.style.pointerEvents = 'none';
+            highlightBeacon.style.userSelect = 'none';
+            highlightBeacon.style.zIndex = '9999999';
+            highlightBeacon.style.border = '5px solid orange';
+            highlightBeacon.style.boxSizing = 'content-box';
+            highlightBeacon.id = 'WebGenInternalBeaconDontEdit';
+        }
+        var c = getCoords(highlightedElement);
+        highlightBeacon.style.top = (c.top - 5) + 'px';
+        highlightBeacon.style.left = (c.left - 5) + 'px';
+        highlightBeacon.style.width = c.width + 'px';
+        highlightBeacon.style.height = c.height + 'px';
+    }
+}
+
 function updateInspector() {
     $(inspector)[selectedElement ? 'show' : 'hide']();
     if (selectedElement) {
         let selected = selectedElementUpward();
+        setHighlightElement(selected);
         let tag = selected.tagName.toLowerCase();
         let elements = attributes['*'].concat(attributes[tag] || []);
         let elementsToAdd = [];
@@ -150,7 +202,7 @@ function updateInspector() {
             $('#props').append(props[el]);
         });
         Object.entries(props).forEach(([k, el]) => {
-            $('input', el).val(selected.getAttribute(k));
+            $('input,textarea,select', el).val(selected.getAttribute(k));
         });
     }
 }
@@ -161,59 +213,92 @@ function applyInspector(e) {
     }
 }
 
-function insertComponent(e) {
+function insertImageByUrlForm(e) {
+    if (this.value) {
+        var img = workdoc().createElement('img');
+        img.alt = "";
+        img.src = this.value;
+        img.style.width = '100%';
+        insertComponent(img, true, false);
+        bootstrap.Modal.getInstance($('#imageModal')[0]).hide();
+        this.form.reset();
+    }
+}
+
+function insertImageByFileForm(e) {
+    if (this.files && this.files[0]) {
+
+        var FR = new FileReader();
+
+        FR.addEventListener("load", (e) => {
+            var img = workdoc().createElement('img');
+            img.alt = "";
+            if (e.target.result.length > 1024 * 1024) {
+                if (!confirm('This file is very large probably will slow down your editing experience. Please consider uploading to a cloud image service, or shall we proceed?'))
+                    return;
+            }
+            img.src = e.target.result;
+            img.style.width = '100%';
+            insertComponent(img, true, false);
+            bootstrap.Modal.getInstance($('#imageModal')[0]).hide();
+            this.form.reset();
+        });
+
+        FR.readAsDataURL(this.files[0]);
+    }
+}
+
+function insertComponentByForm(e) {
     e.preventDefault();
     let keys = $(e.target).serializeObject();
     let html = listComponents[parseInt($(e.target).data('key'))].render(keys);
+    let inline = false;
+    if (keys.insertinsidecontent) {
+        e.target.insertinsidecontent.value = "";
+        inline = true;
+    }
+    insertComponent(html, inline, false);
+}
+
+function insertComponent(html, inline = true, select = true) {
+    if (!html) return;
     var sel, range, oldr;
     if ((sel = workdoc().getSelection()).rangeCount) {
         range = new Range();
         oldr = sel.getRangeAt(0);
         var el = selectedElementUpward();
-        console.log(keys);
         if (!el || el.tagName === 'HTML' || el.tagName === 'BODY') {
             el = workarea()[0];
             range.selectNodeContents(el);
-        } else if (keys.insertinsidecontent) {
-            e.target.insertinsidecontent.value = "";
+        } else if (inline) {
+            if (!oldr.collapsed) {
+                oldr.deleteContents();
+            }
             range.selectNodeContents(el);
         } else {
             range.selectNode(el);
         }
         range.collapse(false);
-        var div = document.createElement('div');
-        div.innerHTML = html.trim();
-        const node = div.firstChild;
-        range.insertNode(node);
+        if (typeof html === 'string') {
+            var div = document.createElement('div');
+            div.innerHTML = html.trim();
+            const node = div.firstChild;
+            range.insertNode(node);
+            if (select) {
+                oldr.selectNodeContents(node);
+                workarea()[0].focus();
+            }
+        } else {
+            console.log(html);
+            range.insertNode(html);
+            if (select) {
+                oldr = new Range();
+                oldr.selectNodeContents(html);
+                workarea()[0].focus();
+            }
+        }
         sel.removeAllRanges();
         sel.addRange(oldr);
-        // range = sel.getRangeAt(0).cloneRange();
-        // var r = selectedElement;
-        // if (!isInline(html)) {
-        //     formatDoc('insertParagraph');
-        //     if (r.parentElement) {
-        //         var last = r.parentElement.childNodes[r.parentElement.childElementCount - 1];
-        //         console.log(last.tagName);
-        //         // if (last && last.tagName === 'BR') {
-        //         //     last.remove();
-        //         //     last = r.parentElement.childNodes[r.parentElement.childElementCount - 1];
-        //         // }
-        //         if (last === r) {
-        //             // so we can insert at the end
-        //             sel.removeAllRanges();
-        //             sel.addRange(range);
-        //             formatDoc('insertParagraph');
-        //         }
-        //     }
-        // }
-        // formatDoc('insertHTML', html);
-        // sel.removeAllRanges();
-        // sel.addRange(range);
-        // div.innerHTML = html.trim();
-        // range.insertNode(div.firstChild);
-        // range.setStartAfter(div.firstChild);
-        // range.collapse(true);
-        // sel.addRange(range);
     }
 }
 
@@ -274,11 +359,18 @@ $(function () {
     });
 
     // load adapter
-    import('../adapters/bootstrap.js').then((module) => {
-
+    var url = new URLSearchParams(this.location.search.substr(1));
+    let adapter = 'bootstrap';
+    if (url.get('adapter'))
+        adapter = url.get('adapter');
+    import('../adapters/' + adapter + '.js').then((module) => {
         listComponents = module.components;
-        $('#workarea')[0].srcdoc = module.template;
+        let srcdoc = module.template;
+        if (sessionStorage['webgen-workspace'])
+            srcdoc = sessionStorage['webgen-workspace'];
+        $('#workarea')[0].srcdoc = srcdoc;
         $('#comps').append(...renderComponents(listComponents))
+        $('.CodeMirror').hide();
         setTimeout(() => {
             let doc = workdoc();
             doc.designMode = 'on';
@@ -289,6 +381,9 @@ $(function () {
                 selUpward = 0;
                 updateInspector();
             })
+            $('#workarea')[0].contentWindow.addEventListener('resize', function (event) {
+                setHighlightElement(highlightedElement);
+            }, true);
             doc.addEventListener('keydown', function (event) {
                 if (event.ctrlKey && event.key === 'z') {
                     formatDoc('undo');
@@ -296,6 +391,10 @@ $(function () {
                 }
                 if (event.ctrlKey && event.key === 'y') {
                     formatDoc('redo');
+                    event.preventDefault();
+                }
+                if (event.ctrlKey && event.key === 'Delete') {
+                    formatDoc('delete');
                     event.preventDefault();
                 }
             });
@@ -310,6 +409,10 @@ $(function () {
                         selElem = selElem.parentNode;
                     }
                 }
+                if (selElem === highlightBeacon) {
+                    console.log('fefefe');
+                    return;
+                }
                 if (selElem !== selectedElement) {
                     selectedElement = selElem;
                     selUpward = 0;
@@ -317,5 +420,8 @@ $(function () {
                 }
             });
         }, 500);
+    }).catch(x => {
+        console.log(x);
+        alert('Sorry, we failed to load adapter. Check console log.');
     });
 })

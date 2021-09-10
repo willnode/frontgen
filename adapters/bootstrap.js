@@ -49,6 +49,7 @@ var escapeHTML = function (unsafe) {
 
 var toOptions = (list) => `<select>${list.map(x => `<option>${x}</option>`).join('')}</select>`;
 var toCheckBox = '<input type="checkbox">';
+var toNumber = '<input type="number">';
 var toText = '<input type="text">';
 var colors = ["primary", "secondary", "success", "danger", "warning", "info", "light", "dark"];
 
@@ -146,7 +147,7 @@ const components = [{
 }, {
     name: 'Button Group',
     props: {
-        buttons: toText,
+        buttons: toNumber,
         color: toOptions([...colors, ...(colors.map(x => 'outline-' + x)), 'link']),
         size: toOptions(['', 'lg', 'sm']),
     },
@@ -166,7 +167,7 @@ const components = [{
 }, {
     name: 'Breadcrumb',
     props: {
-        items: toText,
+        items: toNumber,
         delimiter: toOptions(['/', '>', '']),
     },
     render: ({
@@ -185,7 +186,7 @@ const components = [{
 }, {
     name: 'Carousel',
     props: {
-        images: toText,
+        images: toNumber,
         controls: toCheckBox,
         indicators: toCheckBox,
         captions: toCheckBox,
@@ -304,12 +305,12 @@ const components = [{
     props: {
         columns: toOptions(['', '1', '2', '3', '4', '5', '6', '8', '9', '10', '12']),
         gutter: toOptions(['', '0', '1', '2', '3', '4', '5']),
-        colWidths: toText,
+        itemClasses: toText,
     },
     render: ({
         columns,
         gutter,
-        colWidths,
+        itemClasses,
     }) => {
         if (columns)
             columns = parseInt(columns);
@@ -317,18 +318,18 @@ const components = [{
             columns = 2;
         if (gutter)
             gutter = parseInt(gutter);
-        if (!colWidths)
-            colWidths = 'col';
+        if (!itemClasses)
+            itemClasses = 'col';
 
         return `<div class="row${gutter ? ' g-' + gutter: ''}">
-            ${new Array(columns).fill().map(() => `<div class="${escapeHTML(colWidths)}">Column here</div>`).join('')}
+            ${new Array(columns).fill().map(() => `<div class="${escapeHTML(itemClasses)}">Column here</div>`).join('')}
             </div>
             `
     }
 }, {
     name: 'Tabs',
     props: {
-        tabs: toText,
+        tabs: toNumber,
         pills: toCheckBox,
         vertical: toCheckBox,
     },
@@ -353,8 +354,8 @@ const components = [{
 }, {
     name: 'Tables',
     props: {
-        columns: toText,
-        rows: toText,
+        columns: toNumber,
+        rows: toNumber,
         striped: toCheckBox,
         bordered: toCheckBox,
         responsive: toCheckBox,

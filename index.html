@@ -9,7 +9,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" />
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.62.3/codemirror.min.css" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.62.3/addon/hint/show-hint.min.css" />
+    <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.62.3/addon/hint/show-hint.min.css" />
     <link href="./style.css" rel="stylesheet">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="./src/undo.js"></script>
@@ -22,9 +23,11 @@
     <script defer src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.62.3/addon/hint/xml-hint.min.js"></script>
     <script defer src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.62.3/addon/hint/html-hint.min.js"></script>
     <script defer src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.62.3/mode/xml/xml.min.js"></script>
-    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.62.3/mode/javascript/javascript.min.js"></script>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.62.3/mode/javascript/javascript.min.js">
+    </script>
     <script defer src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.62.3/mode/css/css.min.js"></script>
-    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.62.3/mode/htmlmixed/htmlmixed.min.js"></script>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.62.3/mode/htmlmixed/htmlmixed.min.js">
+    </script>
 </head>
 
 <body>
@@ -36,6 +39,9 @@
             <button onclick="setSelUpward(1)" title="Select Upward"><i class="fas fa-arrow-up"></i></button>
             <button onclick="setSelUpward(-1)" title="Select Downward"><i class="fas fa-arrow-down"></i></button>
             <button onclick="setClear()" title="Delete selected"><i class="fas fa-trash"></i></button>
+            <button
+                onclick="var el = prompt('Type element (e.g. p.class-1.class-2#id)', 'div'); if(el) insertComponent(generateHtml(el))"
+                title="Create element"><i class="fas fa-star-of-life"></i></button>
             <button onclick="setMoveUpward(-1)" title="Move Selection Upward"><i class="fas fa-chevron-up"></i></button>
             <button onclick="setMoveUpward(1)" title="Move Selection Downward"><i
                     class="fas fa-chevron-down"></i></button>
@@ -47,6 +53,12 @@
                         class="fas fa-undo"></i></button>
                 <button class="btn btn-sm btn-outline-secondary" id="redo" onclick="formatDoc('redo');"><i
                         class="fas fa-redo"></i></button>
+                <button class="btn btn-sm btn-outline-secondary" id="undo" onclick="formatDoc('copy');"><i
+                        class="fas fa-copy"></i></button>
+                <button class="btn btn-sm btn-outline-secondary" id="redo" onclick="formatDoc('cut');"><i
+                        class="fas fa-cut"></i></button>
+                <button class="btn btn-sm btn-outline-secondary" id="redo" onclick="formatDoc('paste');"><i
+                        class="fas fa-paste"></i></button>
                 <button class="btn btn-sm btn-outline-secondary" onclick="formatDoc('removeFormat');"><i
                         class="fas fa-remove-format"></i></button>
                 <div class="btn-group" role="group">
@@ -109,9 +121,10 @@
                 <button class="btn btn-sm btn-outline-secondary"
                     onclick="var sLnk=prompt('Write the URL here','http:\/\/');if(sLnk&&sLnk!=''&&sLnk!='http://'){formatDoc('createlink',sLnk)}"><i
                         class="fas fa-link"></i></button>
-                <button class="btn btn-sm btn-outline-secondary"
-                    onclick="var sLnk=prompt('Write the URL here','./blank.png');if(sLnk&&sLnk!=''){formatDoc('insertimage',sLnk)}"><i
-                        class="fas fa-image"></i></button>
+                <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal"
+                    data-bs-target="#imageModal">
+                    <i class="fas fa-image"></i>
+                </button>
             </div>
             <iframe id="workarea" sandbox="allow-same-origin allow-scripts"></iframe>
             <textarea id="worksrc" class="font-monospace"></textarea>
@@ -124,6 +137,30 @@
         </div>
     </div>
 
+    <div class="modal fade" id="imageModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <form class="modal-content" onsubmit="return false">
+                <div class="modal-header">
+                    <h5 class="modal-title">Insert Image</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="imageurl">Insert Image URL</label>
+                        <input type="text" id="imageurl" onchange="insertImageByUrlForm.call(this)"
+                            placeholder="https://...">
+                    </div>
+                    <div class="mb-3">
+                        <label for="">Or Drop an image Here</label>
+                        <input type="file" onchange="insertImageByFileForm.call(this)">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </form>
+        </div>
+    </div>
 </body>
 
 </html>
