@@ -1,3 +1,4 @@
+'use strict';
 let srcView = false;
 let txtTool = false;
 const observer = new MutationObserver(mutationCallback);
@@ -59,73 +60,95 @@ function toggleSupMode() {
 
 function formatDoc(sCmd, sValue) {
     switch (sCmd) {
-        case 'undo':
+        case 'undo': {
             if (!stack.canUndo()) return;
             blocked = true;
             stack.undo();
-            break;
-        case 'redo':
-            if (!stack.canRedo()) return;
-            blocked = true;
-            stack.redo();
-            break;
-        case 'delete':
-            if (!selectedElement) return;
-            let s = selectedElementUpward();
-            if (!s || s.tagName === 'HTML' || s.tagName === 'BODY') {
-                var sel = workdoc().getSelection();
-                if (sel.rangeCount) {
-                    sel.getRangeAt(0).deleteContents();
-                    sel.removeAllRanges();
-                }
-                var r = new Range();
-                r.selectNodeContents(workarea());
-                sel.addRange(r);
-            } else {
-                selectElement(s.parentElement);
-                s.remove();
+        }
+        break;
+    case 'redo': {
+        if (!stack.canRedo()) return;
+        blocked = true;
+        stack.redo();
+    }
+    break;
+    case 'delete': {
+        if (!selectedElement) return;
+        var s = selectedElementUpward();
+        if (!s || s.tagName === 'HTML' || s.tagName === 'BODY') {
+            var sel = workdoc().getSelection();
+            if (sel.rangeCount) {
+                sel.getRangeAt(0).deleteContents();
+                sel.removeAllRanges();
             }
-            break;
-        case 'copy':
-        case 'cut':
-            var cut = sCmd === 'cut';
-            var r = workdoc().getSelection().getRangeAt(0);
-            let t = r[cut ? 'extractContents' : 'cloneContents']();
-            window.navigator.clipboard.writeText($('<div>').append(t).html());
-            break;
-        case 'paste':
-            var r = workdoc().getSelection().getRangeAt(0);
-            window.navigator.clipboard.readText().then(
-                x => {
-                    r.deleteContents();
-                    r.insertNode($('<div>').html(x)[0]);
-                }
-            )
-            break;
-        case 'formatblock':
-            s = selectedElementUpward();
-            if (s && s.tagName === 'BODY') {
-                var sel = workdoc().getSelection().getRangeAt(0);
-                if (sel && !sel.collapsed) {
-                    var n = workdoc().createElement(sValue);
-                    sel.surroundContents(n);
-                    selectElement(n);
-                }
-                return;
+            var r = new Range();
+            r.selectNodeContents(workarea());
+            sel.addRange(r);
+        } else {
+            selectElement(s.parentElement);
+            s.remove();
+        }
+    }
+    break;
+    case 'selectall': {
+        var r = workdoc().getSelection().getRangeAt(0);
+        var n = selectedElementUpward();
+        r.selectNodeContents(n);
+        break;
+    }
+    case 'copy':
+    case 'cut': {
+        var cut = sCmd === 'cut';
+        var r = workdoc().getSelection().getRangeAt(0);
+        if (r.collapsed) {
+            n = selectedElementUpward();
+            if (n && n.tagName === 'BODY')
+                r.selectNodeContents(n);
+            else
+                r.selectNode(n);
+        }
+        let t = r[cut ? 'extractContents' : 'cloneContents']();
+        window.navigator.clipboard.writeText($('<div>').append(t).html());
+        break;
+    }
+    case 'paste': {
+        var r = workdoc().getSelection().getRangeAt(0);
+        window.navigator.clipboard.readText().then(
+            x => {
+                r.deleteContents();
+                var nodes = $('<div>').html(x)[0];
+                [...nodes.childNodes].forEach(y => {
+                    r.insertNode(y);
+                    r.collapse(false);
+                });
             }
-            /** @type {HTMLElement} */
-            var n = workdoc().createElement(sValue);
-            n.attributes = s.attributes;
-            [...s.attributes].forEach(attr => {
-                n.setAttribute(attr.nodeName, attr.nodeValue)
-            });
-            n.innerHTML = s.innerHTML;
-            $(s).replaceWith(n);
-            selectElement(n);
-            break;
-        default:
-            workdoc().execCommand(sCmd, false, sValue);
-            break;
+        )
+    }
+    break;
+    case 'formatblock': {
+        var s = selectedElementUpward();
+        if (s && s.tagName === 'BODY') {
+            var sel = workdoc().getSelection().getRangeAt(0);
+            if (sel && !sel.collapsed) {
+                var n = workdoc().createElement(sValue);
+                sel.surroundContents(n);
+                selectElement(n);
+            }
+            return;
+        }
+        /** @type {HTMLElement} */
+        var n = workdoc().createElement(sValue);
+        [...s.attributes].forEach(attr => {
+            n.setAttribute(attr.nodeName, attr.nodeValue)
+        });
+        n.innerHTML = s.innerHTML;
+        $(s).replaceWith(n);
+        selectElement(n);
+    }
+    break;
+    default:
+        workdoc().execCommand(sCmd, false, sValue);
+        break;
     }
     workarea().focus();
     updateInspector();
@@ -245,14 +268,25 @@ function updateInspector() {
             $('#props').append(props[el]);
         });
         Object.entries(props).forEach(([k, el]) => {
-            $('input,textarea,select', el).val(selected.getAttribute(k));
+            var f = $('input,textarea,select', el);
+            if (f[0].type === 'checkbox') {
+                f.prop('checked', selected.hasAttribute(k))
+            } else {
+                f.val(selected.getAttribute(k));
+            }
         });
     }
 }
 
 function applyInspector(e) {
     if (selectedElement) {
-        selectedElementUpward().setAttribute($(e.target).data('key'), $(e.target).val());
+        if (e.target.type === 'checkbox') {
+            if (e.target.checked)
+                selectedElementUpward().setAttribute($(e.target).data('key'), "");
+            else
+                selectedElementUpward().removeAttribute($(e.target).data('key'));
+        } else
+            selectedElementUpward().setAttribute($(e.target).data('key'), $(e.target).val());
     }
 }
 
@@ -297,6 +331,7 @@ function insertComponentByForm(e) {
     let html = listComponents[parseInt($(e.target).data('key'))].render(keys);
     let mode = e.target.insertmode.value;
     e.target.insertmode.value = "";
+    console.log(e.shiftKey);
     if (e.shiftKey) {
         if (mode === "after")
             mode = "before";
@@ -314,56 +349,60 @@ function promptInsertElement(mode) {
 
 function insertComponent(html, /** @type {"before"|"after"|"below"|"above"|"flush"|"replace"} */ mode = 'after', select = true) {
     if (!html) return;
-    var sel, range, oldr;
-    if ((sel = workdoc().getSelection()).rangeCount) {
-        range = new Range();
-        oldr = sel.getRangeAt(0);
-        var el = selectedElementUpward();
-        if (!el || el.tagName === 'HTML' || el.tagName === 'BODY') {
-            el = workarea();
-            range.selectNodeContents(el);
-            if (mode === "before")
-                mode = "below";
-            if (mode === "after")
-                mode = "above";
-            if (mode === "replace")
-                mode = "flush";
-        }
-        switch (mode) {
-            case "before":
-            case "after":
-            case "replace":
-                range.selectNode(el);
-                mode !== "replace" ? range.collapse(mode === "before") : range.deleteContents();
-                break;
-            case "below":
-            case "above":
-            case "flush":
-                range.selectNodeContents(el);
-                mode !== "flush" ? range.collapse(mode === "above") : range.deleteContents();
-                break;
-        }
-        let node;
-        if (typeof html === 'string') {
-            var div = document.createElement('div');
-            div.innerHTML = html.trim();
-            node = div.firstChild;
-        } else {
-            node = html;
-        }
-        range.insertNode(node);
-        if (select) {
-            oldr = new Range();
-            oldr.selectNodeContents(node);
-        } else if (mode === "replace") {
-            oldr = new Range();
-            oldr.selectNode(node);
-            setTimeout(() => selectElement(node), 10);
-        }
-        workarea().focus();
-        sel.removeAllRanges();
-        sel.addRange(oldr);
+    var sel, range;
+    if (!(sel = workdoc().getSelection()).rangeCount)
+        return;
+    range = new Range();
+    var el = selectedElementUpward();
+    if (!el || el.tagName === 'HTML' || el.tagName === 'BODY') {
+        el = workarea();
+        range.selectNodeContents(el);
+        if (mode === "before")
+            mode = "below";
+        if (mode === "after")
+            mode = "above";
+        if (mode === "replace")
+            mode = "flush";
     }
+    switch (mode) {
+        case "before":
+        case "after":
+        case "replace":
+            range.selectNode(el);
+            mode !== "replace" ? range.collapse(mode === "before") : range.deleteContents();
+            break;
+        case "below":
+        case "above":
+        case "flush":
+            range.selectNodeContents(el);
+            mode !== "flush" ? range.collapse(mode === "above") : range.deleteContents();
+            break;
+    }
+    let node;
+    if (typeof html === 'string') {
+        var div = document.createElement('div');
+        div.innerHTML = html.trim();
+        node = div.firstChild;
+    } else {
+        node = html;
+    }
+    range.insertNode(node);
+    var oldr = new Range();
+
+    if (select) {
+        oldr.selectNodeContents(node);
+    } else if (mode === "replace") {
+        oldr.selectNode(node);
+        setTimeout(() => selectElement(node), 10);
+    } else {
+        setHighlightElement(highlightedElement);
+        oldr.selectNodeContents(el);
+        oldr.collapse(false);
+    }
+    workarea().focus();
+    sel.removeAllRanges();
+    sel.addRange(oldr);
+
 }
 
 function setSelUpward(offset) {

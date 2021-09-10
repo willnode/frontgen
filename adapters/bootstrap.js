@@ -10,57 +10,6 @@ const template = `<!DOCTYPE html><html>
 <div class="container"><h1>Edit Here</p></div>
 </body></html>`;
 
-function makeid(length) {
-    var result = '';
-    var characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
-    var charactersLength = characters.length;
-    for (var i = 0; i < length; i++) {
-        result += characters.charAt(Math.floor(Math.random() *
-            charactersLength));
-    }
-    return result;
-}
-
-function normInt(v) {
-    if (v)
-        v = parseInt(v);
-    if (!v)
-        v = 3;
-    v = Math.max(v, 1);
-    return v;
-}
-
-var randomID = (prefix) => {
-    if (workdoc) {
-        let num = 1;
-        while (workdoc().getElementById(prefix + "-" + num)) {
-            num++;
-        }
-        return prefix + "-" + num;
-    } else {
-        return prefix + "-" + makeid(5);
-    }
-};
-
-var escapeHTML = function (unsafe) {
-    return unsafe.replace(/[&<"']/g, function (m) {
-        switch (m) {
-            case '&':
-                return '&amp;';
-            case '<':
-                return '&lt;';
-            case '"':
-                return '&quot;';
-            default:
-                return '&#039;';
-        }
-    });
-};
-
-var toOptions = (list) => `<select class="form-select form-select-sm">${list.map(x => `<option>${x}</option>`).join('')}</select>`;
-var toCheckBox = '<input type="checkbox" class="form-check-input form-control-sm">';
-var toNumber = '<input type="number" class="form-control form-control-sm">';
-var toText = '<input type="text" class="form-control form-control-sm">';
 var colors = ["primary", "secondary", "success", "danger", "warning", "info", "light", "dark"];
 
 const components = [{
@@ -275,13 +224,84 @@ const components = [{
            </div>`
     }
 }, {
-    name: 'Form',
-    props: {},
+    name: 'Dropdown',
+    props: {
+        menus: toNumber,
+        color: toOptions([...colors, ...(colors.map(x => 'outline-' + x))]),
+        direction: toOptions(['down', 'start', 'end', 'up']),
+        split: toCheckBox,
+        dark: toCheckBox,
+        alignEnd: toCheckBox,
+        asNavItem: toCheckBox,
+    },
     render: ({
-
+        menus,
+        color,
+        direction,
+        split,
+        dark,
+        alignEnd,
+        asNavItem,
     }) => {
+        menus = normInt(menus);
+        if (direction === 'down' && !asNavItem)
+            direction = '';
+        var id = randomID('dropdown');
+        var tag = asNavItem ? `a` : `button`;
+        var attr = asNavItem ? `href="#"` : `type="button"`;
+        var btn = asNavItem ? `nav-link` : `btn btn-${color}`;
+        return `<div class="${asNavItem ? 'nav-item':'btn-group'}${direction ? ' drop' + direction : ''}">
+        ${split ? `<${tag} ${attr} class="${btn}">
+            Split Drop${direction || 'down'}
+        </${tag}>
+        <${tag} ${attr} class="${btn} dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
+            <span class="visually-hidden">Toggle Drop${direction || 'down'}</span>
+        </${tag}>`: `<${tag} ${attr} class="${btn} dropdown-toggle"
+            id="${id}" data-bs-toggle="dropdown" aria-expanded="false">
+          Drop${direction || 'down'}
+        </${tag}>`}
+        <ul class="dropdown-menu${dark ? ' dropdown-menu-dark': ''}${alignEnd ? ' dropdown-menu-end': ''}" aria-labelledby="${id}">
+            ${new Array(menus).fill().map((x, i) => `<li><a class="dropdown-item" href="#">Menu ${i + 1}</a></li>`).join('')}
+        </ul>
+      </div>`
+    }
+}, {
+    name: 'Dropdown Item',
+    props: {
+        type: toOptions(['item', 'text', 'active', 'disabled', 'divider', 'header']),
+    },
+    render: ({
+        type
+    }) => {
+        switch (type) {
+            case 'item':
+                return `<li><a class="dropdown-item" href="#">Menu item</a></li>`;
+            case 'active':
+                return `<li><a class="dropdown-item active" href="#" aria-current="true">Menu item</a></li>`;
+            case 'disabled':
+                return `<li><a class="dropdown-item disabled" href="#" aria-disabled="true">Menu item</a></li>`;
+            case 'divider':
+                return `<li><hr class="dropdown-divider"></li>`;
+            case 'header':
+                return `<li><h6 class="dropdown-header">Dropdown header</h6></li>`;
+            case 'text':
+                return `<div class="dropdown-menu text-muted">
+                 Text content inside dropdown
+              </div>`;
+        }
+    }
+}, {
+    name: 'Form',
+    props: {
+        inputs: toNumber,
+    },
+    render: ({
+        inputs
+    }) => {
+        inputs = normInt(inputs);
+        var inputRenderer = components.find(x => x.name === 'Form Control').render;
         return `<form method="POST">
-
+        ${new Array(inputs).fill().map(x => inputRenderer()).join('')}
         <button type="submit" class="btn btn-primary">Submit</button>
         </form>
             `
@@ -289,7 +309,7 @@ const components = [{
 }, {
     name: 'Form Control',
     props: {
-        type: toOptions(['input', 'number', 'textarea', 'select', 'checkbox', 'radio', 'email', 'password', 'range', 'date', 'time', 'datetime-local', 'color', 'file']),
+        type: toOptions([...inputTypes, 'textarea', 'select']),
         validity: toOptions(['', 'valid', 'invalid']),
         noLabel: toCheckBox,
         disabled: toCheckBox,
@@ -326,6 +346,103 @@ const components = [{
             </div>`
     }
 }, {
+    name: 'Navs',
+    props: {
+        items: toNumber,
+        justify: toOptions(['start', 'center', 'end']),
+        pills: toCheckBox,
+    },
+    render: ({
+        items,
+        justify,
+        pills
+    }) => {
+        return `
+        <ul class="nav${justify ? ' justify-content-' + justify : ''}${pills ? ' nav-pills' : ''}">
+        ${new Array(items).fill().map((x, i) => `<li class="nav-item">
+                <a class="nav-link${i === 0 ? ' active' : ''} " href="#">Nav ${i + 1}</a>
+            </li>`).join('')}
+        </ul>`
+    }
+}, {
+    name: 'Navbar',
+    props: {
+        menus: toNumber,
+        justify: toOptions(['start', 'center', 'end']),
+        variant: toOptions(['light', 'dark']),
+        background: toOptions(['', ...colors]),
+        collapse: toOptions(['', 'never', 'sm', 'md', 'lg', 'xl', 'xxl', 'always']),
+        searchBar: toCheckBox,
+    },
+    render: ({
+        menus,
+        variant,
+        justify,
+        background,
+        collapse,
+        searchBar,
+    }) => {
+        menus = normInt(menus);
+        if (!collapse)
+            collapse = 'md';
+        if (collapse === 'never')
+            collapse = 'navbar-expand'
+        else if (collapse === 'always')
+            collapse = ''
+        else
+            collapse = 'navbar-expand-' + collapse
+        if (!background)
+            background = variant;
+        justify = ({
+            start: 'me-auto',
+            center: 'mx-auto',
+            end: 'ms-auto'
+        })[justify];
+        return `
+            <nav class="navbar ${collapse} navbar-${variant} bg-${background}">
+                <div class="container-fluid">
+                    <a class="navbar-brand" href="#">
+                        <img src="/blank.png" alt="" width="30" class="d-inline-block me-2">
+                        Navbar
+                    </a>
+                    ${collapse !== 'navbar-expand' ? `<button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                    </button>` : ''}
+                    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                    <ul class="navbar-nav ${justify} mb-2 mb-lg-0">
+                    ${new Array(menus).fill().map((x, i) => `<li class="nav-item">
+                            <a class="nav-link${i === 0 ? ' active' : ''} " href="#">Nav ${i + 1}</a>
+                        </li>`).join('')}
+                    </ul>
+                    ${searchBar ? `<form class="d-flex">
+                        <input class="form-control me-2" type="search" placeholder="Search" aria-label="Search">
+                        <button class="btn btn-outline-success" type="submit">Search</button>
+                    </form>` : ''}
+                    </div>
+                </div>
+            </nav>`
+    }
+}, {
+    name: 'Progress',
+    props: {
+        width: toNumber,
+        color: toOptions(['', ...colors]),
+        text: toCheckBox,
+        animated: toCheckBox,
+    },
+    render: ({
+        width,
+        color,
+        text,
+        animated,
+    }) => {
+        width = normInt(width, 50);
+        return `<div class="progress">
+        <div class="progress-bar${ animated ? ' progress-bar-striped progress-bar-animated' : ''}${color ? ' bg-' + color : ''}" role="progressbar"
+        aria-valuenow="${width}" aria-valuemin="0" aria-valuemax="100" style="width: ${width}%">${text ? `${width}%` : ''}</div>
+      </div>`
+    }
+}, {
     name: 'Rows',
     props: {
         columns: toOptions(['', '1', '2', '3', '4', '5', '6', '8', '9', '10', '12']),
@@ -350,6 +467,20 @@ const components = [{
             ${new Array(columns).fill().map((x, i) => `<div class="${escapeHTML(itemClasses)}">Column ${i + 1}</div>`).join('')}
             </div>
             `
+    }
+}, {
+    name: 'Spinner',
+    props: {
+        type: toOptions(['border', 'grow']),
+        color: toOptions(['', ...colors]),
+    },
+    render: ({
+        type,
+        color,
+    }) => {
+        return `<div class="spinner-${type}${color? ' text-' + color : ''}" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>`
     }
 }, {
     name: 'Tabs',
