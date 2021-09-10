@@ -33,103 +33,136 @@
 <body>
 
     <div class="d-flex">
-        <div class="me-1 d-flex flex-column fa-2x" id="toolbar">
-            <button onclick="toggleSrcView()" id="btn-srcview" title="Toggle Source Code"><i
-                    class="fas fa-file-code"></i></button>
-            <button onclick="setSelUpward(1)" title="Select Upward"><i class="fas fa-arrow-up"></i></button>
-            <button onclick="setSelUpward(-1)" title="Select Downward"><i class="fas fa-arrow-down"></i></button>
-            <button onclick="setClear()" title="Delete selected"><i class="fas fa-trash"></i></button>
-            <button
-                onclick="var el = prompt('Type element (e.g. p.class-1.class-2#id)', 'div'); if(el) insertComponent(generateHtml(el))"
-                title="Create element"><i class="fas fa-star-of-life"></i></button>
-            <button onclick="setMoveUpward(-1)" title="Move Selection Upward"><i class="fas fa-chevron-up"></i></button>
-            <button onclick="setMoveUpward(1)" title="Move Selection Downward"><i
-                    class="fas fa-chevron-down"></i></button>
+        <div class="btn-group-vertical bg-light pe-1" id="toolbar">
+            <button class="btn btn-outline-secondary" onclick="toggleSrcView()" id="btn-srcview"
+                title="Toggle Source Code"><i class="fas fa-2x fa-file-code"></i></button>
+            <button class="btn btn-outline-secondary" onclick="setSelUpward(1)" title="Select Upward"><i
+                    class="fas fa-2x fa-arrow-up"></i></button>
+            <button class="btn btn-outline-secondary" onclick="setSelUpward(-1)" title="Select Downward"><i
+                    class="fas fa-2x fa-arrow-down"></i></button>
+            <button class="btn btn-outline-secondary" onclick="setClear()" title="Delete selected"><i
+                    class="fas fa-2x fa-trash"></i></button>
+            <div class="btn-group dropend flex-grow-1" role="group">
+                <button id="btnGroupDrop2" type="button" class="btn btn-outline-secondary dropdown-toggle"
+                    data-bs-toggle="dropdown" aria-expanded="false" title="Insert Element">
+                    <i class="fas fa-2x fa-star-of-life"></i>
+                </button>
+                <ul class="dropdown-menu" aria-labelledby="btnGroupDrop2">
+                    <li><button class="dropdown-item" onclick="promptInsertElement('before');"><i
+                                class="fas fa-level-up-alt me-2"></i>Before Element</button></li>
+                    <li><button class="dropdown-item" onclick="promptInsertElement('after');"><i
+                                class="fas fa-level-down-alt me-2"></i>After Element</button></li>
+                    <li><button class="dropdown-item" onclick="promptInsertElement('above');"><i
+                                class="fas fa-sort-amount-up-alt me-2"></i>Above Content</button></li>
+                    <li><button class="dropdown-item" onclick="promptInsertElement('below');"><i
+                                class="fas fa-sort-amount-down-alt me-2"></i>Below Content</button></li>
+                    <li><button class="dropdown-item" onclick="promptInsertElement('flush');"><i
+                                class="fas fa-clone me-2"></i>Replace Content</button></li>
+                    <li><button class="dropdown-item" onclick="promptInsertElement('replace');"><i
+                                class="fas fa-eraser me-2"></i>Replace Element</button></li>
+                </ul>
+            </div>
+            <button class="btn btn-outline-secondary" onclick="setMoveUpward(-1)" title="Move Selection Upward"><i
+                    class="fas fa-2x fa-chevron-up"></i></button>
+            <button class="btn btn-outline-secondary" onclick="setMoveUpward(1)" title="Move Selection Downward"><i
+                    class="fas fa-2x fa-chevron-down"></i></button>
         </div>
         <div id="workspace">
 
-            <div id="tooltxt" class="btn-group">
-                <button class="btn btn-sm btn-outline-secondary" id="undo" onclick="formatDoc('undo');"><i
-                        class="fas fa-undo"></i></button>
-                <button class="btn btn-sm btn-outline-secondary" id="redo" onclick="formatDoc('redo');"><i
-                        class="fas fa-redo"></i></button>
-                <button class="btn btn-sm btn-outline-secondary" id="undo" onclick="formatDoc('copy');"><i
-                        class="fas fa-copy"></i></button>
-                <button class="btn btn-sm btn-outline-secondary" id="redo" onclick="formatDoc('cut');"><i
-                        class="fas fa-cut"></i></button>
-                <button class="btn btn-sm btn-outline-secondary" id="redo" onclick="formatDoc('paste');"><i
-                        class="fas fa-paste"></i></button>
-                <button class="btn btn-sm btn-outline-secondary" onclick="formatDoc('removeFormat');"><i
-                        class="fas fa-remove-format"></i></button>
-                <div class="btn-group" role="group">
-                    <button id="btnGroupDrop1" type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle"
-                        data-bs-toggle="dropdown" aria-expanded="false">
-                        <i class="fas fa-heading"></i>
-                    </button>
-                    <ul class="dropdown-menu" aria-labelledby="btnGroupDrop1">
-                        <li><button class="dropdown-item" onclick="formatDoc('formatblock','div');"><i
-                                    class="fas fa-file me-2"></i>General Div</button></li>
-                        <li><button class="dropdown-item" onclick="formatDoc('formatblock','p');"><i
-                                    class="fas fa-paragraph me-2"></i>Paragraph</button></li>
-                        <li><button class="dropdown-item" onclick="formatDoc('formatblock','pre');"><i
-                                    class="fas fa-code me-2"></i>Code</button></li>
-                        <li><button class="dropdown-item" onclick="formatDoc('formatblock','blockquote');"><i
-                                    class="fas fa-quote-left me-2"></i>Blockquote</button></li>
-                        <li><button class="dropdown-item h1" onclick="formatDoc('formatblock','h1');"><i
-                                    class="fas fa-heading me-2"></i>Title 1</button></li>
-                        <li><button class="dropdown-item h2" onclick="formatDoc('formatblock','h2');"><i
-                                    class="fas fa-heading me-2"></i>Title 2</button></li>
-                        <li><button class="dropdown-item h3" onclick="formatDoc('formatblock','h3');"><i
-                                    class="fas fa-heading me-2"></i>Title 3</button></li>
-                        <li><button class="dropdown-item h4" onclick="formatDoc('formatblock','h4');"><i
-                                    class="fas fa-heading me-2"></i>Title 4</button></li>
-                        <li><button class="dropdown-item h5" onclick="formatDoc('formatblock','h5');"><i
-                                    class="fas fa-heading me-2"></i>Title 5</button></li>
-                        <li><button class="dropdown-item h6" onclick="formatDoc('formatblock','h6');"><i
-                                    class="fas fa-heading me-2"></i>Title 6</button></li>
-                    </ul>
+            <div id="tooltxt" class="btn-toolbar bg-light">
+                <div class="btn-group m-1">
+                    <button class="btn btn-sm btn-outline-secondary" id="undo" onclick="formatDoc('undo');"><i
+                            class="fas fa-undo"></i></button>
+                    <button class="btn btn-sm btn-outline-secondary" id="redo" onclick="formatDoc('redo');"><i
+                            class="fas fa-redo"></i></button>
+                    <button class="btn btn-sm btn-outline-secondary" id="undo" onclick="formatDoc('copy');"><i
+                            class="fas fa-copy"></i></button>
+                    <button class="btn btn-sm btn-outline-secondary" id="redo" onclick="formatDoc('cut');"><i
+                            class="fas fa-cut"></i></button>
+                    <button class="btn btn-sm btn-outline-secondary" id="redo" onclick="formatDoc('paste');"><i
+                            class="fas fa-paste"></i></button>
                 </div>
-                <button class="btn btn-sm btn-outline-secondary" onclick="formatDoc('bold');"><i
-                        class="fas fa-bold"></i></button>
-                <button class="btn btn-sm btn-outline-secondary" onclick="formatDoc('italic');"><i
-                        class="fas fa-italic"></i></button>
-                <button class="btn btn-sm btn-outline-secondary" onclick="formatDoc('underline');"><i
-                        class="fas fa-underline"></i></button>
-                <button class="btn btn-sm btn-outline-secondary" onclick="formatDoc('strikethrough');"><i
-                        class="fas fa-strikethrough"></i></button>
-                <button class="btn btn-sm btn-outline-secondary" onclick="formatDoc('subscript');"><i
-                        class="fas fa-subscript"></i></button>
-                <button class="btn btn-sm btn-outline-secondary" onclick="formatDoc('superscript');"><i
-                        class="fas fa-superscript"></i></button>
-                <button class="btn btn-sm btn-outline-secondary" onclick="formatDoc('justifyleft');"><i
-                        class="fas fa-align-left"></i></button>
-                <button class="btn btn-sm btn-outline-secondary" onclick="formatDoc('justifycenter');"><i
-                        class="fas fa-align-center"></i></button>
-                <button class="btn btn-sm btn-outline-secondary" onclick="formatDoc('justifyright');"><i
-                        class="fas fa-align-right"></i></button>
-                <button class="btn btn-sm btn-outline-secondary" onclick="formatDoc('justifyfull');"><i
-                        class="fas fa-align-justify"></i></button>
-                <button class="btn btn-sm btn-outline-secondary" onclick="formatDoc('insertorderedlist');"><i
-                        class="fas fa-list-ol"></i></button>
-                <button class="btn btn-sm btn-outline-secondary" onclick="formatDoc('insertunorderedlist');"><i
-                        class="fas fa-list-ul"></i></button>
+                <div class="btn-group m-1">
+                    <div class="btn-group" role="group">
+                        <button id="btnGroupDrop1" type="button"
+                            class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown"
+                            aria-expanded="false">
+                            <i class="fas fa-heading"></i>
+                        </button>
+                        <ul class="dropdown-menu" aria-labelledby="btnGroupDrop1">
+                            <li><button class="dropdown-item" onclick="formatDoc('formatblock','div');"><i
+                                        class="fas fa-file me-2"></i>General Div</button></li>
+                            <li><button class="dropdown-item" onclick="formatDoc('formatblock','p');"><i
+                                        class="fas fa-paragraph me-2"></i>Paragraph</button></li>
+                            <li><button class="dropdown-item" onclick="formatDoc('formatblock','pre');"><i
+                                        class="fas fa-code me-2"></i>Code</button></li>
+                            <li><button class="dropdown-item" onclick="formatDoc('formatblock','blockquote');"><i
+                                        class="fas fa-quote-left me-2"></i>Blockquote</button></li>
+                            <li><button class="dropdown-item h1" onclick="formatDoc('formatblock','h1');"><i
+                                        class="fas fa-heading me-2"></i>Title 1</button></li>
+                            <li><button class="dropdown-item h2" onclick="formatDoc('formatblock','h2');"><i
+                                        class="fas fa-heading me-2"></i>Title 2</button></li>
+                            <li><button class="dropdown-item h3" onclick="formatDoc('formatblock','h3');"><i
+                                        class="fas fa-heading me-2"></i>Title 3</button></li>
+                            <li><button class="dropdown-item h4" onclick="formatDoc('formatblock','h4');"><i
+                                        class="fas fa-heading me-2"></i>Title 4</button></li>
+                            <li><button class="dropdown-item h5" onclick="formatDoc('formatblock','h5');"><i
+                                        class="fas fa-heading me-2"></i>Title 5</button></li>
+                            <li><button class="dropdown-item h6" onclick="formatDoc('formatblock','h6');"><i
+                                        class="fas fa-heading me-2"></i>Title 6</button></li>
+                        </ul>
+                    </div>
+                    <button class="btn btn-sm btn-outline-secondary" onclick="formatDoc('removeFormat');"><i
+                            class="fas fa-remove-format"></i></button>
 
-                <button class="btn btn-sm btn-outline-secondary" onclick="formatDoc('outdent');"><i
-                        class="fas fa-outdent"></i></button>
-                <button class="btn btn-sm btn-outline-secondary" onclick="formatDoc('indent');"><i
-                        class="fas fa-indent"></i></button>
-                <button class="btn btn-sm btn-outline-secondary"
-                    onclick="var sLnk=prompt('Write the URL here','http:\/\/');if(sLnk&&sLnk!=''&&sLnk!='http://'){formatDoc('createlink',sLnk)}"><i
-                        class="fas fa-link"></i></button>
-                <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal"
-                    data-bs-target="#imageModal">
-                    <i class="fas fa-image"></i>
-                </button>
+                    <button class="btn btn-sm btn-outline-secondary" onclick="formatDoc('bold');"><i
+                            class="fas fa-bold"></i></button>
+                    <button class="btn btn-sm btn-outline-secondary" onclick="formatDoc('italic');"><i
+                            class="fas fa-italic"></i></button>
+                    <button class="btn btn-sm btn-outline-secondary" onclick="formatDoc('underline');"><i
+                            class="fas fa-underline"></i></button>
+                    <button class="btn btn-sm btn-outline-secondary" onclick="formatDoc('strikethrough');"><i
+                            class="fas fa-strikethrough"></i></button>
+                    <button class="btn btn-sm btn-outline-secondary" onclick="formatDoc('subscript');"><i
+                            class="fas fa-subscript"></i></button>
+                    <button class="btn btn-sm btn-outline-secondary" onclick="formatDoc('superscript');"><i
+                            class="fas fa-superscript"></i></button>
+
+                </div>
+                <div class="btn-group m-1">
+                    <button class="btn btn-sm btn-outline-secondary" onclick="formatDoc('justifyleft');"><i
+                            class="fas fa-align-left"></i></button>
+                    <button class="btn btn-sm btn-outline-secondary" onclick="formatDoc('justifycenter');"><i
+                            class="fas fa-align-center"></i></button>
+                    <button class="btn btn-sm btn-outline-secondary" onclick="formatDoc('justifyright');"><i
+                            class="fas fa-align-right"></i></button>
+                    <button class="btn btn-sm btn-outline-secondary" onclick="formatDoc('justifyfull');"><i
+                            class="fas fa-align-justify"></i></button>
+                    <button class="btn btn-sm btn-outline-secondary" onclick="formatDoc('insertorderedlist');"><i
+                            class="fas fa-list-ol"></i></button>
+                    <button class="btn btn-sm btn-outline-secondary" onclick="formatDoc('insertunorderedlist');"><i
+                            class="fas fa-list-ul"></i></button>
+
+                    <button class="btn btn-sm btn-outline-secondary" onclick="formatDoc('outdent');"><i
+                            class="fas fa-outdent"></i></button>
+                    <button class="btn btn-sm btn-outline-secondary" onclick="formatDoc('indent');"><i
+                            class="fas fa-indent"></i></button>
+
+                </div>
+                <div class="btn-group m-1">
+                    <button class="btn btn-sm btn-outline-secondary"
+                        onclick="var sLnk=prompt('Write the URL here','http:\/\/');if(sLnk&&sLnk!=''&&sLnk!='http://'){formatDoc('createlink',sLnk)}"><i
+                            class="fas fa-link"></i></button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal"
+                        data-bs-target="#imageModal">
+                        <i class="fas fa-image"></i>
+                    </button>
+                </div>
             </div>
             <iframe id="workarea" sandbox="allow-same-origin allow-scripts"></iframe>
             <textarea id="worksrc" class="font-monospace"></textarea>
         </div>
-        <div class="ms-1 p-1" id="inspector">
+        <div class="ps-1 p-1 bg-light" id="inspector">
             <h5 id="elem"></h5>
             <div id="props"></div>
             <hr>

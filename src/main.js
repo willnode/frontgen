@@ -156,13 +156,14 @@ function setHighlightElement( /** @type {HTMLElement} */ el) {
             highlightBeacon.style.pointerEvents = 'none';
             highlightBeacon.style.userSelect = 'none';
             highlightBeacon.style.zIndex = '9999999';
-            highlightBeacon.style.border = '5px solid orange';
+            highlightBeacon.style.border = '10px solid #0088ff';
+            highlightBeacon.style.mixBlendMode = 'difference';
             highlightBeacon.style.boxSizing = 'content-box';
             highlightBeacon.id = 'WebGenInternalBeaconDontEdit';
         }
         var c = getCoords(highlightedElement);
-        highlightBeacon.style.top = (c.top - 5) + 'px';
-        highlightBeacon.style.left = (c.left - 5) + 'px';
+        highlightBeacon.style.top = (c.top - 10) + 'px';
+        highlightBeacon.style.left = (c.left - 10) + 'px';
         highlightBeacon.style.width = c.width + 'px';
         highlightBeacon.style.height = c.height + 'px';
     }
@@ -195,7 +196,7 @@ function updateInspector() {
         });
         elementsToAdd.forEach(el => {
             let tt = elements.find(x => x.name === el);
-            let ty = tt && tt.type || '<input>';
+            let ty = tt && tt.type || '<input class="form-control form-control-sm">';
             props[el] = $('<label>')
                 .append($('<span>').text(el))
                 .append($(ty).data('key', el).on('input', applyInspector));
@@ -219,7 +220,7 @@ function insertImageByUrlForm(e) {
         img.alt = "";
         img.src = this.value;
         img.style.width = '100%';
-        insertComponent(img, true, false);
+        insertComponent(img, "below", false);
         bootstrap.Modal.getInstance($('#imageModal')[0]).hide();
         this.form.reset();
     }
@@ -239,7 +240,7 @@ function insertImageByFileForm(e) {
             }
             img.src = e.target.result;
             img.style.width = '100%';
-            insertComponent(img, true, false);
+            insertComponent(img, "below", false);
             bootstrap.Modal.getInstance($('#imageModal')[0]).hide();
             this.form.reset();
         });
@@ -252,15 +253,24 @@ function insertComponentByForm(e) {
     e.preventDefault();
     let keys = $(e.target).serializeObject();
     let html = listComponents[parseInt($(e.target).data('key'))].render(keys);
-    let inline = false;
-    if (keys.insertinsidecontent) {
-        e.target.insertinsidecontent.value = "";
-        inline = true;
+    let mode = e.target.insertmode.value;
+    e.target.insertmode.value = "";
+    if (e.shiftKey) {
+        if (mode === "after")
+            mode = "before";
+        if (mode === "below")
+            mode = "above";
     }
-    insertComponent(html, inline, false);
+    insertComponent(html, mode, false);
 }
 
-function insertComponent(html, inline = true, select = true) {
+function promptInsertElement(mode) {
+    var el = prompt('Enter the new element (e.g. p.class-1.class-2#id)', 'div');
+    if (el)
+        insertComponent(generateHtml(el), mode);
+}
+
+function insertComponent(html, /** @type {"before"|"after"|"below"|"above"|"flush"|"replace"} */ mode = 'after', select = true) {
     if (!html) return;
     var sel, range, oldr;
     if ((sel = workdoc().getSelection()).rangeCount) {
@@ -270,33 +280,49 @@ function insertComponent(html, inline = true, select = true) {
         if (!el || el.tagName === 'HTML' || el.tagName === 'BODY') {
             el = workarea()[0];
             range.selectNodeContents(el);
-        } else if (inline) {
-            if (!oldr.collapsed) {
-                oldr.deleteContents();
-            }
-            range.selectNodeContents(el);
-        } else {
-            range.selectNode(el);
+            if (mode === "before")
+                mode = "below";
+            if (mode === "after")
+                mode = "above";
+            if (mode === "replace")
+                mode = "flush";
         }
-        range.collapse(false);
+        switch (mode) {
+            case "before":
+            case "after":
+            case "replace":
+                range.selectNode(el);
+                mode !== "replace" ? range.collapse(mode === "before") : range.deleteContents();
+                break;
+            case "below":
+            case "above":
+            case "flush":
+                range.selectNodeContents(el);
+                mode !== "flush" ? range.collapse(mode === "above") : range.deleteContents();
+                break;
+        }
+        let node;
         if (typeof html === 'string') {
             var div = document.createElement('div');
             div.innerHTML = html.trim();
-            const node = div.firstChild;
-            range.insertNode(node);
-            if (select) {
-                oldr.selectNodeContents(node);
-                workarea()[0].focus();
-            }
+            node = div.firstChild;
         } else {
-            console.log(html);
-            range.insertNode(html);
-            if (select) {
-                oldr = new Range();
-                oldr.selectNodeContents(html);
-                workarea()[0].focus();
-            }
+            node = html;
         }
+        range.insertNode(node);
+        if (select) {
+            oldr = new Range();
+            oldr.selectNodeContents(node);
+        } else if (mode === "replace") {
+            oldr = new Range();
+            oldr.selectNode(node);
+            setTimeout(() => {
+                selectedElement = node;
+                selUpward = 0;
+                updateInspector();
+            }, 10);
+        }
+        workarea()[0].focus();
         sel.removeAllRanges();
         sel.addRange(oldr);
     }
@@ -329,6 +355,7 @@ function setMoveUpward(offset) {
             sel.parentElement.insertBefore(sel, prev);
         }
     }
+    setHighlightElement(highlightedElement);
 }
 
 function setClear() {
@@ -384,6 +411,8 @@ $(function () {
             $('#workarea')[0].contentWindow.addEventListener('resize', function (event) {
                 setHighlightElement(highlightedElement);
             }, true);
+            selectedElement = workarea()[0];
+            updateInspector();
             doc.addEventListener('keydown', function (event) {
                 if (event.ctrlKey && event.key === 'z') {
                     formatDoc('undo');

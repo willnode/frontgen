@@ -47,10 +47,10 @@ var escapeHTML = function (unsafe) {
     });
 };
 
-var toOptions = (list) => `<select>${list.map(x => `<option>${x}</option>`).join('')}</select>`;
-var toCheckBox = '<input type="checkbox">';
-var toNumber = '<input type="number">';
-var toText = '<input type="text">';
+var toOptions = (list) => `<select class="form-select form-select-sm">${list.map(x => `<option>${x}</option>`).join('')}</select>`;
+var toCheckBox = '<input type="checkbox" class="form-check-input form-control-sm">';
+var toNumber = '<input type="number" class="form-control form-control-sm">';
+var toText = '<input type="text" class="form-control form-control-sm">';
 var colors = ["primary", "secondary", "success", "danger", "warning", "info", "light", "dark"];
 
 const components = [{
@@ -277,7 +277,8 @@ const components = [{
         disabled
     }) => {
         const id = randomID();
-        const attrs = `class="form-${type === 'checkbox' || type === 'radio' ? 'form-check-input': (type === 'select' || type ==='range' ? type : 'control')}${validity ? ' is-' + validity : ''}" id="${id}"${disabled ? ' disabled': ''} placeholder="Form Input"`;
+        const label = type[0].toUpperCase() + type.slice(1);
+        const attrs = `class="form-${type === 'checkbox' || type === 'radio' ? 'form-check-input': (type === 'select' || type ==='range' ? type : 'control')}${validity ? ' is-' + validity : ''}" id="${id}"${disabled ? ' disabled': ''} placeholder="Enter ${label}"`;
         let elem;
         switch (type) {
             case 'textarea':
@@ -292,10 +293,10 @@ const components = [{
         }
         return type === 'checkbox' || type === 'radio' ? `<div class="form-check">
         ${elem}
-        ${noLabel ? '' : `<label for="${id}" class="form-check-label">Label form</label>`}
+        ${noLabel ? '' : `<label for="${id}" class="form-check-label">${label} Label</label>`}
         ${noLabel || !validity ? '' : `<div class="${validity}-feedback">${validity} feedback</div>`}
       </div>` : `<div class="mb-3">
-      ${noLabel ? '' : `<label for="${id}" class="form-label">Label form</label>`}
+      ${noLabel ? '' : `<label for="${id}" class="form-label">${label} Label</label>`}
             ${elem}
             ${noLabel || !validity ? '' : `<div class="${validity}-feedback">${validity} feedback</div>`}
             </div>`
@@ -322,7 +323,7 @@ const components = [{
             itemClasses = 'col';
 
         return `<div class="row${gutter ? ' g-' + gutter: ''}">
-            ${new Array(columns).fill().map(() => `<div class="${escapeHTML(itemClasses)}">Column here</div>`).join('')}
+            ${new Array(columns).fill().map((x, i) => `<div class="${escapeHTML(itemClasses)}">Column ${i + 1}</div>`).join('')}
             </div>
             `
     }

@@ -4,13 +4,17 @@ body {
 
 #toolbar,
 #inspector {
-    background: lightblue;
     height: 100vh;
 }
+#inspector{
+    display: flex;
+    flex-direction: column;
+}
 
-#inspector {
+#comps {
     width: 300px;
     overflow-y: auto;
+    height: fit-content;
 }
 
 @media (max-width: 600px) {
@@ -21,13 +25,7 @@ body {
 #elem {
     text-overflow: ellipsis;
     overflow: hidden;
-}
-#toolbar>button {
-    background: white;
-}
-
-#toolbar>button.active {
-    background: lime;
+    flex-shrink: 0;
 }
 
 #workspace {
@@ -59,23 +57,20 @@ body {
     flex-wrap: wrap;
 }
 
-#tooltxt>* {
-    flex-grow: 0;
-}
-
 #util {
     position: relative;
 }
 
 
-#props label,
-form label {
+#props > *,
+#comps form > * {
     display: flex;
     align-items: center;
+    margin-bottom: 0.2em;
 }
 
-#props span,
-form span {
+#props span:first-child,
+form span:first-child {
     margin-right: auto;
     text-transform: capitalize;
 }
@@ -84,8 +79,11 @@ form span {
     padding: 0.5rem 1rem;
 }
 
-#comps input, #comps select, #comps textarea {
+#comps input:not([type="checkbox"]), #comps select, #comps textarea {
     width: 50%;
+}
+#props input, #props select, #props textarea {
+    width: 70%;
 }
 #comps input[type="submit"] {
    float: right;

@@ -25,7 +25,7 @@
 const attributes = {
     '*': ['class', 'id', {
         name: 'style',
-        type: '<textarea>'
+        type: '<textarea class="form-control form-control-sm">'
     }],
     img: ['src', 'width', 'height'],
     video: ['src'],
@@ -64,7 +64,7 @@ function generateHtml( /** @type {string} */ emmet) {
 }
 
 function generateCleanExportedHtml() {
-    var html = workdoc().documentElement.innerHTML;
+    var html = workdoc().documentElement.outerHTML;
     html = html.replace(/<div.+?WebGenInternalBeaconDontEdit.+?<\/div>/g, '');
     return html_beautify(html);
 }
@@ -86,9 +86,15 @@ const renderComponents = (components) => components.map((x, i) => $('<div class=
                     ]) => $('<label>')
                     .append($('<span>').text(k))
                     .append($(v).attr('name', k))),
-                $('<button>').text('Insert After'),
-                $('<input type="hidden" name="insertinsidecontent">'),
-                $('<input type="submit" onclick="this.form.insertinsidecontent.value=1" value="Insert Inside">'),
+                $('<input type="hidden" name="insertmode">'),
+                $('<span>').append($('<span class="fw-bold">').text('Insert')).append(
+                    $('<span class="btn-group mt-1">').append(
+                        $('<button type="submit" class="btn btn-outline-secondary btn-sm" onclick="this.form.insertmode.value=`before`" title="Below Element"><i class="fas fa-level-down-alt"></i></button>'),
+                        $('<button type="submit" class="btn btn-outline-secondary btn-sm" onclick="this.form.insertmode.value=`inside`" title="Inside Element"><i class="fas fa-sort-amount-down-alt"></i></button>'),
+                        $('<button type="submit" class="btn btn-outline-secondary btn-sm" onclick="this.form.insertmode.value=`flush`" title="Replace Element Content"><i class="fas fa-clone"></i></button>'),
+                        $('<button type="submit" class="btn btn-outline-secondary btn-sm" onclick="this.form.insertmode.value=`replace`" title="Replace Whole Element"><i class="fas fa-eraser"></i></button>'),
+                    )
+                )
             ).data('key', i).on('submit', insertComponentByForm))
         ))
 )
