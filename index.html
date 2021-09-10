@@ -36,11 +36,23 @@
         <div class="btn-group-vertical bg-light pe-1" id="toolbar">
             <button class="btn btn-outline-secondary" onclick="toggleSrcView()" id="btn-srcview"
                 title="Toggle Source Code"><i class="fas fa-2x fa-file-code"></i></button>
-            <button class="btn btn-outline-secondary" onclick="setSelUpward(1)" title="Select Upward"><i
-                    class="fas fa-2x fa-arrow-up"></i></button>
-            <button class="btn btn-outline-secondary" onclick="setSelUpward(-1)" title="Select Downward"><i
-                    class="fas fa-2x fa-arrow-down"></i></button>
-            <button class="btn btn-outline-secondary" onclick="setClear()" title="Delete selected"><i
+
+            <div class="btn-group dropend flex-grow-1" role="group">
+                <div class="btn-group-vertical">
+                    <button class="btn btn-outline-secondary" onclick="setSelUpward(1)" title="Select Upward"><i
+                            class="fas fa-2x fa-arrow-up"></i></button>
+                    <button class="btn btn-outline-secondary" onclick="setSelUpward(-1)" title="Select Downward"><i
+                            class="fas fa-2x fa-arrow-down"></i></button>
+                </div>
+                <button id="btnGroupDrop3" type="button" class="btn btn-outline-secondary dropdown-toggle"
+                    onclick="updateChildrenList()" data-bs-toggle="dropdown" aria-expanded="false"
+                    title="Choose Child Elements">
+                    <span class="visually-hidden">Toggle Dropdown</span>
+                </button>
+                <ul class="dropdown-menu" id="childrenList" aria-labelledby="btnGroupDrop3">
+                </ul>
+            </div>
+            <button class="btn btn-outline-secondary" onclick="formatDoc('delete')" title="Delete selected"><i
                     class="fas fa-2x fa-trash"></i></button>
             <div class="btn-group dropend flex-grow-1" role="group">
                 <button id="btnGroupDrop2" type="button" class="btn btn-outline-secondary dropdown-toggle"
@@ -48,6 +60,11 @@
                     <i class="fas fa-2x fa-star-of-life"></i>
                 </button>
                 <ul class="dropdown-menu" aria-labelledby="btnGroupDrop2">
+                    <li><button disabled class="dropdown-item">
+                            Insert new element</button></li>
+                    <li>
+                        <hr class="dropdown-divider">
+                    </li>
                     <li><button class="dropdown-item" onclick="promptInsertElement('before');"><i
                                 class="fas fa-level-up-alt me-2"></i>Before Element</button></li>
                     <li><button class="dropdown-item" onclick="promptInsertElement('after');"><i

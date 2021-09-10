@@ -20,9 +20,9 @@ let listComponents;
 let highlightedElement;
 /** @type {HTMLElement} */
 let highlightBeacon;
-const workarea = () => $('#workarea').contents().find('body');
+const workarea = () => workdoc().body;
 /** @type {() => Document} */
-const workdoc = () => $('#workarea')[0].contentWindow.document;
+const workdoc = () => document.getElementById('workarea').contentWindow.document;
 
 function toggleSrcView() {
     srcView = !srcView;
@@ -70,8 +70,19 @@ function formatDoc(sCmd, sValue) {
             stack.redo();
             break;
         case 'delete':
-            var s = selectedElementUpward();
-            if (s && s.tagName !== 'BODY') {
+            if (!selectedElement) return;
+            let s = selectedElementUpward();
+            if (!s || s.tagName === 'HTML' || s.tagName === 'BODY') {
+                var sel = workdoc().getSelection();
+                if (sel.rangeCount) {
+                    sel.getRangeAt(0).deleteContents();
+                    sel.removeAllRanges();
+                }
+                var r = new Range();
+                r.selectNodeContents(workarea());
+                sel.addRange(r);
+            } else {
+                selectElement(s.parentElement);
                 s.remove();
             }
             break;
@@ -92,15 +103,13 @@ function formatDoc(sCmd, sValue) {
             )
             break;
         case 'formatblock':
-            var s = selectedElementUpward();
+            s = selectedElementUpward();
             if (s && s.tagName === 'BODY') {
                 var sel = workdoc().getSelection().getRangeAt(0);
                 if (sel && !sel.collapsed) {
                     var n = workdoc().createElement(sValue);
                     sel.surroundContents(n);
-                    selUpward = 0;
-                    selectedElement = n;
-                    updateInspector();
+                    selectElement(n);
                 }
                 return;
             }
@@ -112,9 +121,7 @@ function formatDoc(sCmd, sValue) {
             });
             n.innerHTML = s.innerHTML;
             $(s).replaceWith(n);
-            selUpward = 0;
-            selectedElement = n;
-            updateInspector();
+            selectElement(n);
             break;
         default:
             workdoc().execCommand(sCmd, false, sValue);
@@ -126,6 +133,8 @@ function formatDoc(sCmd, sValue) {
 const props = {};
 const selectedElementUpward = () => {
     let selected = selectedElement;
+    if (selected.tagName === 'HTML')
+        return workarea();
     if (selected && selUpward > 0) {
         let upw = selUpward;
         while (upw > 0) {
@@ -151,7 +160,7 @@ function setHighlightElement( /** @type {HTMLElement} */ el) {
     } else {
         if (!highlightBeacon) {
             highlightBeacon = workdoc().createElement('div');
-            workarea().append(highlightBeacon);
+            workarea().appendChild(highlightBeacon);
             highlightBeacon.style.position = 'absolute';
             highlightBeacon.style.pointerEvents = 'none';
             highlightBeacon.style.userSelect = 'none';
@@ -167,6 +176,39 @@ function setHighlightElement( /** @type {HTMLElement} */ el) {
         highlightBeacon.style.width = c.width + 'px';
         highlightBeacon.style.height = c.height + 'px';
     }
+}
+
+function updateChildrenList() {
+    var p = $('#childrenList');
+    var s = selectedElementUpward();
+    var a = selectedElement;
+    var els = [];
+    while (a) {
+        els.push(a);
+        if (a.tagName === 'BODY') break;
+        a = a.parentNode;
+    }
+    p.children().remove();
+    p.append(
+        $('<li><button disabled class="dropdown-item">Selected parents</button></li>'),
+        ...els.map((x, i) => $('<li>').append(
+            $('<button class="dropdown-item">').addClass(s === x ? 'active' : '').text(getNickName(x)).on('click', function () {
+                selUpward = i;
+                updateInspector();
+            }))),
+        $('<li><hr class="dropdown-divider"></li>'),
+        $('<li><button disabled class="dropdown-item">Selected children</button></li>'),
+        $('<li><hr class="dropdown-divider"></li>'),
+        ...[...s.children].map(x => $('<li>').append(
+            $('<button class="dropdown-item">').text(getNickName(x)).on('click', function () {
+                selectElement(x, true);
+            }))))
+}
+
+function selectElement(element, actuallySelect = false) {
+    selectedElement = element;
+    selUpward = 0;
+    updateInspector();
 }
 
 function updateInspector() {
@@ -278,7 +320,7 @@ function insertComponent(html, /** @type {"before"|"after"|"below"|"above"|"flus
         oldr = sel.getRangeAt(0);
         var el = selectedElementUpward();
         if (!el || el.tagName === 'HTML' || el.tagName === 'BODY') {
-            el = workarea()[0];
+            el = workarea();
             range.selectNodeContents(el);
             if (mode === "before")
                 mode = "below";
@@ -316,13 +358,9 @@ function insertComponent(html, /** @type {"before"|"after"|"below"|"above"|"flus
         } else if (mode === "replace") {
             oldr = new Range();
             oldr.selectNode(node);
-            setTimeout(() => {
-                selectedElement = node;
-                selUpward = 0;
-                updateInspector();
-            }, 10);
+            setTimeout(() => selectElement(node), 10);
         }
-        workarea()[0].focus();
+        workarea().focus();
         sel.removeAllRanges();
         sel.addRange(oldr);
     }
@@ -357,19 +395,6 @@ function setMoveUpward(offset) {
     }
     setHighlightElement(highlightedElement);
 }
-
-function setClear() {
-    if (selectedElement) {
-        let selected = selectedElementUpward();
-        var sel = workdoc().getSelection();
-        var r = new Range();
-        r.selectNode(selected);
-        sel.removeAllRanges();
-        sel.addRange(r);
-        formatDoc('delete');
-        selectedElement = null;
-    }
-}
 let codeMirror;
 // main loop
 $(function () {
@@ -401,17 +426,12 @@ $(function () {
         setTimeout(() => {
             let doc = workdoc();
             doc.designMode = 'on';
-            workarea().prop('data-gramm', false);
-            observer.observe(workarea()[0], mutationConfig);
-            doc.addEventListener('click', (e) => {
-                selectedElement = e.target;
-                selUpward = 0;
-                updateInspector();
-            })
+            observer.observe(workarea(), mutationConfig);
+            doc.addEventListener('click', (e) => selectElement(e.target))
             $('#workarea')[0].contentWindow.addEventListener('resize', function (event) {
                 setHighlightElement(highlightedElement);
             }, true);
-            selectedElement = workarea()[0];
+            selectedElement = workarea();
             updateInspector();
             doc.addEventListener('keydown', function (event) {
                 if (event.ctrlKey && event.key === 'z') {
@@ -442,11 +462,8 @@ $(function () {
                     console.log('fefefe');
                     return;
                 }
-                if (selElem !== selectedElement) {
-                    selectedElement = selElem;
-                    selUpward = 0;
-                    updateInspector();
-                }
+                if (selElem !== selectedElement)
+                    selectElement(selElem);
             });
         }, 500);
     }).catch(x => {

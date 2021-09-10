@@ -17,15 +17,18 @@ body {
     height: fit-content;
 }
 
-@media (max-width: 600px) {
-    #inspector {
-        width: 200px;
-    }
-}
 #elem {
     text-overflow: ellipsis;
     overflow: hidden;
     flex-shrink: 0;
+    white-space: nowrap;
+    width: 300px;
+}
+@media (max-width: 600px) {
+    #inspector, #elem {
+        width: 200px;
+    }
+
 }
 
 #workspace {

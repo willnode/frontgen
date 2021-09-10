@@ -64,7 +64,7 @@ function generateHtml( /** @type {string} */ emmet) {
 }
 
 function generateCleanExportedHtml() {
-    var html = workdoc().documentElement.outerHTML;
+    var html = workdoc().documentElement.innerHTML;
     html = html.replace(/<div.+?WebGenInternalBeaconDontEdit.+?<\/div>/g, '');
     return html_beautify(html);
 }
@@ -90,7 +90,7 @@ const renderComponents = (components) => components.map((x, i) => $('<div class=
                 $('<span>').append($('<span class="fw-bold">').text('Insert')).append(
                     $('<span class="btn-group mt-1">').append(
                         $('<button type="submit" class="btn btn-outline-secondary btn-sm" onclick="this.form.insertmode.value=`before`" title="Below Element"><i class="fas fa-level-down-alt"></i></button>'),
-                        $('<button type="submit" class="btn btn-outline-secondary btn-sm" onclick="this.form.insertmode.value=`inside`" title="Inside Element"><i class="fas fa-sort-amount-down-alt"></i></button>'),
+                        $('<button type="submit" class="btn btn-outline-secondary btn-sm" onclick="this.form.insertmode.value=`below`" title="Inside Element"><i class="fas fa-sort-amount-down-alt"></i></button>'),
                         $('<button type="submit" class="btn btn-outline-secondary btn-sm" onclick="this.form.insertmode.value=`flush`" title="Replace Element Content"><i class="fas fa-clone"></i></button>'),
                         $('<button type="submit" class="btn btn-outline-secondary btn-sm" onclick="this.form.insertmode.value=`replace`" title="Replace Whole Element"><i class="fas fa-eraser"></i></button>'),
                     )
@@ -130,7 +130,7 @@ var SelectionCommand = Undo.Command.extend({
     constructor: function ( /** @type {Document} */ document) {
         this.target = document;
         const sel = document.getSelection();
-        if (sel) {
+        if (sel && sel.rangeCount) {
             this.range = sel.getRangeAt(0).cloneRange();
             this.start = this.range.startOffset;
             this.end = this.range.endOffset;
@@ -148,10 +148,10 @@ var SelectionCommand = Undo.Command.extend({
     },
     redo: function () {}
 });
-var getNickName = ( /** @type {HTMLElement} */ el) => {
+function getNickName ( /** @type {HTMLElement} */ el) {
     var s = el.tagName.toLowerCase();
     var c = el.className ? '.' + el.className.replace(/ /g, '.') : '';
-    var i = ''; //el.id ? '#' + el.id : '';
+    var i = el.id ? '#' + el.id : '';
     return s + c + i;
 }
 var AttributeCommand = Undo.Command.extend({

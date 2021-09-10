@@ -30,7 +30,17 @@ function normInt(v) {
     return v;
 }
 
-var randomID = () => makeid(5);
+var randomID = (prefix) => {
+    if (workdoc) {
+        let num = 1;
+        while (workdoc().getElementById(prefix + "-" + num)) {
+            num++;
+        }
+        return prefix + "-" + num;
+    } else {
+        return prefix + "-" + makeid(5);
+    }
+};
 
 var escapeHTML = function (unsafe) {
     return unsafe.replace(/[&<"']/g, function (m) {
@@ -65,7 +75,7 @@ const components = [{
             rows = parseInt(rows);
         if (!rows)
             rows = 3;
-        const id = randomID();
+        const id = randomID('accordion');
         return `
             <div class="accordion" id="${id}">
             ${new Array(rows).fill().map((x, i) => `<div class="accordion-item">
@@ -190,19 +200,21 @@ const components = [{
         controls: toCheckBox,
         indicators: toCheckBox,
         captions: toCheckBox,
+        variant: toOptions(['light', 'dark']),
     },
     render: ({
         images,
         controls,
         indicators,
         captions,
+        variant,
     }) => {
         images = normInt(images);
 
-        const id = randomID();
+        const id = randomID('carousel');
         return `
 
-        <div id="${id}" class="carousel slide" data-bs-ride="carousel">
+        <div id="${id}" class="carousel${variant === 'dark' ? ' carousel-dark' : ''} slide" data-bs-ride="carousel">
             ${indicators ? `
             <div class="carousel-indicators">
                 ${new Array(images).fill().map((x, i) => `<button type="button" data-bs-target="#${id}" data-bs-slide-to="${i}"${i === 0 ? ' class="active" aria-current="true"' : ''} aria-label="Slide ${i + 1}"></button>`).join('')}
@@ -211,7 +223,7 @@ const components = [{
                 ${new Array(images).fill().map((x, i) => ` <div class="carousel-item${i === 0 ? ' active' : ''}">
                 <img src="./blank.png" class="d-block w-100" alt="...">
                 ${captions ? `<div class="carousel-caption d-none d-md-block">
-                    <h5>Slide ${i} label</h5>
+                    <h5>Slide ${i + 1} label</h5>
                     <p>Some representative placeholder content for the slide ${i + 1}.</p>
                 </div>` : ''}
                 </div>`).join('')}
@@ -251,6 +263,18 @@ const components = [{
           </div>`
     }
 }, {
+    name: 'Container',
+    props: {
+        maxWidth: toOptions(['', 'sm', 'md', 'lg', 'xl', 'xxl', 'fluid']),
+    },
+    render: ({
+        maxWidth,
+    }) => {
+        return `<div class="container${maxWidth ? ' container-' + maxWidth : ''}">
+                Container Content
+           </div>`
+    }
+}, {
     name: 'Form',
     props: {},
     render: ({
@@ -276,7 +300,7 @@ const components = [{
         validity,
         disabled
     }) => {
-        const id = randomID();
+        const id = randomID('input');
         const label = type[0].toUpperCase() + type.slice(1);
         const attrs = `class="form-${type === 'checkbox' || type === 'radio' ? 'form-check-input': (type === 'select' || type ==='range' ? type : 'control')}${validity ? ' is-' + validity : ''}" id="${id}"${disabled ? ' disabled': ''} placeholder="Enter ${label}"`;
         let elem;
@@ -341,15 +365,15 @@ const components = [{
     }) => {
         tabs = normInt(tabs);
 
-        const id = randomID();
-        return `<div><nav>
+        const id = randomID('tabs');
+        return `<div id="${id}"><nav>
         <div class="nav${pills ? ' nav-pills' : ''} nav-tabs" id="${id}-tab" role="tablist">
-            ${new Array(tabs).fill().map((x, i) => ` <button class="nav-link${i === 0 ? ' active' : ''}" id="${id}-${i}-tab" data-bs-toggle="tab" data-bs-target="#${id}-${i}" type="button" role="tab" aria-controls="${id}-${i}">Tab ${i + 1}</button>`).join('')}
+            ${new Array(tabs).fill().map((x, i) => ` <button class="nav-link${i === 0 ? ' active' : ''}" id="${id}-tab-${i}" data-bs-toggle="tab" data-bs-target="#${id}-tabContent-${i}" type="button" role="tab" aria-controls="${id}-tabContent-${i}">Tab ${i + 1}</button>`).join('')}
         </div>
       </nav>
       <div class="tab-content" id="${id}-tabContent">
         ${new Array(tabs).fill().map((x, i) => `
-        <div class="tab-pane fade${i === 0 ? ' show active' : ''}" id="${id}-${i}" role="tabpanel" aria-labelledby="${id}-${i}-tab">Tab ${i + 1} Content</div>`).join('')}
+        <div class="tab-pane fade${i === 0 ? ' show active' : ''}" id="${id}-tabContent-${i}" role="tabpanel" aria-labelledby="${id}-tab-${i}">Tab ${i + 1} Content</div>`).join('')}
       </div></div>`;
     }
 }, {
@@ -373,7 +397,6 @@ const components = [{
         columns = normInt(columns);
         rows = normInt(rows);
 
-        const id = randomID();
         return `
         ${responsive ? '<div class="table-responsive">' : ''}
         <table class="table${striped ? ' table-striped' : ''}${bordered ? ' table-bordered' : ''}${compact ? ' table-sm' : ''}">

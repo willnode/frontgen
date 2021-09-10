@@ -73,8 +73,7 @@ extend(Undo.Stack.prototype, {
 		return this.stackPosition != this.savePosition;
 	},
 	_clearRedo: function() {
-		// TODO there's probably a more efficient way for this
-		this.commands = this.commands.slice(0, this.stackPosition + 1);
+		this.commands.splice(this.stackPosition + 1);
 	},
 	changed: function() {
 		// do nothing, override
