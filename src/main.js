@@ -18,12 +18,19 @@ let selectedElement;
     }) => string;
 }[]} */
 let listComponents;
+/** @type {{
+    name: string;
+    content: string;
+}[]} */
+let listTemplates;
 let highlightedElement;
 /** @type {HTMLElement} */
 let highlightBeacon;
 const workarea = () => workdoc().body;
 /** @type {() => Document} */
 const workdoc = () => document.getElementById('workarea').contentWindow.document;
+/** @type {() => Window} */
+const workwin = () => document.getElementById('workarea').contentWindow;
 
 function toggleSrcView() {
     srcView = !srcView;
@@ -53,19 +60,44 @@ function toggleTxtTool() {
     $('#btn-txttool').toggleClass('active', txtTool);
 }
 
-function toggleSupMode() {
-    supMode = !supMode;
-    console.log(workdoc().getSelection().getRangeAt.getRangeAt(0).getBoundingClientRect());
-}
+/** @type {Window} */
+let watchedWindow;
+let watchedWindowDirty = false;
+let watchedLastCleanHtmlExport;
 
 function formatDoc(sCmd, sValue) {
     switch (sCmd) {
-        case 'undo': {
-            if (!stack.canUndo()) return;
-            blocked = true;
-            stack.undo();
+        case 'view': {
+            // const blob = new Blob([generateCleanExportedHtml()], {type: 'text/html'});
+            // const url = URL.createObjectURL(blob);
+            if (watchedWindow && !watchedWindow.closed) {
+                watchedWindow.focus();
+                return;
+            }
+            var w = window.open("./view.html", '_blank');
+            watchedWindow = w;
+            $('#btn-view').toggleClass('active', true);
+            w.addEventListener('DOMContentLoaded', () => {
+                w.document.documentElement.innerHTML = watchedLastCleanHtmlExport;
+            })
+            var timer = setInterval(function () {
+                if (w.closed) {
+                    clearInterval(timer);
+                    $('#btn-view').toggleClass('active', false);
+                    watchedWindow = null;
+                } else if (watchedWindowDirty) {
+                    w.document.documentElement.innerHTML = watchedLastCleanHtmlExport;
+                    watchedWindowDirty = false;
+                }
+            }, 100);
         }
         break;
+    case 'undo': {
+        if (!stack.canUndo()) return;
+        blocked = true;
+        stack.undo();
+    }
+    break;
     case 'redo': {
         if (!stack.canRedo()) return;
         blocked = true;
@@ -85,7 +117,7 @@ function formatDoc(sCmd, sValue) {
             r.selectNodeContents(workarea());
             sel.addRange(r);
         } else {
-            selectElement(s.parentElement);
+            selectElement(s.nextElementSibling || s.previousElementSibling || s.parentElement);
             s.remove();
         }
     }
@@ -123,6 +155,15 @@ function formatDoc(sCmd, sValue) {
                 });
             }
         )
+    }
+    break;
+    case 'clone': {
+        var el = selectedElementUpward();
+        var cl = el.cloneNode(true);
+        if (el.nextElementSibling)
+            el.parentElement.insertBefore(cl, el.nextElementSibling);
+        else
+            el.parentElement.appendChild(cl);
     }
     break;
     case 'formatblock': {
@@ -191,13 +232,25 @@ function setHighlightElement( /** @type {HTMLElement} */ el) {
             highlightBeacon.style.border = '10px solid #0088ff';
             highlightBeacon.style.mixBlendMode = 'difference';
             highlightBeacon.style.boxSizing = 'content-box';
-            highlightBeacon.id = 'WebGenInternalBeaconDontEdit';
+            highlightBeacon.setAttribute('data-webgen', 'WebGenInternal');
         }
-        var c = getCoords(highlightedElement);
-        highlightBeacon.style.top = (c.top - 10) + 'px';
-        highlightBeacon.style.left = (c.left - 10) + 'px';
-        highlightBeacon.style.width = c.width + 'px';
-        highlightBeacon.style.height = c.height + 'px';
+        var c = getCoords(highlightedElement, workdoc());
+        c.top += 1;
+        c.left += 1;
+        c.width -= 2;
+        c.height -= 2;
+        var btop = Math.max(0, Math.min(c.top, 10));
+        var bleft = Math.max(0, Math.min(c.left, 10));
+        var bright = Math.max(0, Math.min(workdoc().body.scrollWidth - (c.left + c.width), 10));
+        var bbottom = Math.max(0, Math.min(workdoc().body.scrollHeight - (c.top + c.height), 10));
+        highlightBeacon.style.top = (c.top - btop) + 'px';
+        highlightBeacon.style.left = (c.left - bleft) + 'px';
+        highlightBeacon.style.width = (c.width) + 'px';
+        highlightBeacon.style.height = (c.height) + 'px';
+        highlightBeacon.style.borderLeftWidth = bleft + 'px';
+        highlightBeacon.style.borderTopWidth = btop + 'px';
+        highlightBeacon.style.borderRightWidth = bright + 'px';
+        highlightBeacon.style.borderBottomWidth = bbottom + 'px';
     }
 }
 
@@ -325,19 +378,96 @@ function insertImageByFileForm(e) {
     }
 }
 
+function bootIFrame(html) {
+    stack.reset();
+    setHighlightElement(null);
+    $('#workarea')[0].srcdoc = html;
+    setTimeout(() => {
+        observer.observe(workarea(), mutationConfig);
+        let doc = workdoc();
+        doc.designMode = 'on';
+        doc.addEventListener('click', (e) => {
+            selectElement(e.target);
+            if (!e.ctrlKey)
+                e.preventDefault();
+        })
+        $('#workarea')[0].contentWindow.addEventListener('resize', function (event) {
+            setHighlightElement(highlightedElement);
+        }, true);
+        selectedElement = workarea();
+        updateInspector();
+        stack.changed();
+        doc.addEventListener('keydown', function (event) {
+            if (event.ctrlKey && event.key === 'z') {
+                formatDoc('undo');
+                event.preventDefault();
+            }
+            if (event.ctrlKey && event.key === 'y') {
+                formatDoc('redo');
+                event.preventDefault();
+            }
+            if (event.ctrlKey && event.key === 'Delete') {
+                formatDoc('delete');
+                event.preventDefault();
+            }
+        });
+        doc.addEventListener('selectionchange', () => {
+            var sel = workdoc().getSelection();
+            let selElem;
+            if (sel.rangeCount == 0)
+                selElem = null;
+            else {
+                selElem = sel.getRangeAt(0).commonAncestorContainer;
+                if (selElem.nodeType != 1) {
+                    selElem = selElem.parentNode;
+                }
+            }
+            if (selElem === highlightBeacon) {
+                return;
+            }
+            if (selElem !== selectedElement)
+                selectElement(selElem);
+        });
+    }, 500);
+}
+
+function setNewByTemplate(i) {
+    bootIFrame(listTemplates[i].content);
+    bootstrap.Modal.getInstance($('#createModal')[0]).hide();
+}
+
+function setNewByForm(e) {
+    e.preventDefault();
+    var data = $(e.target).serializeObject();
+    if (data.base) {
+        var doc = document.createElement('html');
+        doc.innerHTML = data.html;
+        var base = $('base', doc);
+        if (!base.length) {
+            base = $('<base>');
+            $('head', doc).prepend(base);
+        }
+        base.attr('href', data.base);
+        base.attr('target', '_blank');
+        base.data('webgen', 'WebGenInternal');
+        data.html = doc.innerHTML;
+    }
+    bootIFrame(data.html);
+    bootstrap.Modal.getInstance($('#createModal')[0]).hide();
+}
+
 function insertComponentByForm(e) {
     e.preventDefault();
     let keys = $(e.target).serializeObject();
     let html = listComponents[parseInt($(e.target).data('key'))].render(keys);
     let mode = e.target.insertmode.value;
     e.target.insertmode.value = "";
-    console.log(e.shiftKey);
-    if (e.shiftKey) {
-        if (mode === "after")
-            mode = "before";
-        if (mode === "below")
-            mode = "above";
-    }
+    // if (e.shiftKey) {
+    //     if (mode === "after")
+    //         mode = "before";
+    //     if (mode === "below")
+    //         mode = "above";
+    // }
     insertComponent(html, mode, false);
 }
 
@@ -456,57 +586,23 @@ $(function () {
         adapter = url.get('adapter');
     import('../adapters/' + adapter + '.js').then((module) => {
         listComponents = module.components;
-        let srcdoc = module.template;
+        listTemplates = module.templates;
+        $('#comps').append(...renderComponents(listComponents))
+        $('#templates').append(...renderTemplatesBtn(listTemplates))
+        $('.CodeMirror').hide();
+        let srcdoc = module.templates[0].content;
         if (sessionStorage['webgen-workspace'])
             srcdoc = sessionStorage['webgen-workspace'];
-        $('#workarea')[0].srcdoc = srcdoc;
-        $('#comps').append(...renderComponents(listComponents))
-        $('.CodeMirror').hide();
-        setTimeout(() => {
-            let doc = workdoc();
-            doc.designMode = 'on';
-            observer.observe(workarea(), mutationConfig);
-            doc.addEventListener('click', (e) => selectElement(e.target))
-            $('#workarea')[0].contentWindow.addEventListener('resize', function (event) {
-                setHighlightElement(highlightedElement);
-            }, true);
-            selectedElement = workarea();
-            updateInspector();
-            doc.addEventListener('keydown', function (event) {
-                if (event.ctrlKey && event.key === 'z') {
-                    formatDoc('undo');
-                    event.preventDefault();
-                }
-                if (event.ctrlKey && event.key === 'y') {
-                    formatDoc('redo');
-                    event.preventDefault();
-                }
-                if (event.ctrlKey && event.key === 'Delete') {
-                    formatDoc('delete');
-                    event.preventDefault();
-                }
-            });
-            doc.addEventListener('selectionchange', () => {
-                var sel = workdoc().getSelection();
-                let selElem;
-                if (sel.rangeCount == 0)
-                    selElem = null;
-                else {
-                    selElem = sel.getRangeAt(0).commonAncestorContainer;
-                    if (selElem.nodeType != 1) {
-                        selElem = selElem.parentNode;
-                    }
-                }
-                if (selElem === highlightBeacon) {
-                    console.log('fefefe');
-                    return;
-                }
-                if (selElem !== selectedElement)
-                    selectElement(selElem);
-            });
-        }, 500);
+        else
+            (new bootstrap.Modal($('#createModal')[0])).show();
+        bootIFrame(srcdoc);
     }).catch(x => {
         console.log(x);
         alert('Sorry, we failed to load adapter. Check console log.');
     });
+})
+window.addEventListener('beforeunload', function () {
+    if (watchedWindow && !watchedWindow.closed) {
+        watchedWindow.close();
+    }
 })

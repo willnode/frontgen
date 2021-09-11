@@ -1,106 +1,113 @@
 // https://github.com/jzaefferer/undo/blob/master/undo.js
-var ctor = function(){};
-var inherits = function(parent, protoProps) {
-	var child;
+var ctor = function () {};
+var inherits = function (parent, protoProps) {
+    var child;
 
-	if (protoProps && protoProps.hasOwnProperty('constructor')) {
-		child = protoProps.constructor;
-	} else {
-		child = function(){ return parent.apply(this, arguments); };
-	}
+    if (protoProps && protoProps.hasOwnProperty('constructor')) {
+        child = protoProps.constructor;
+    } else {
+        child = function () {
+            return parent.apply(this, arguments);
+        };
+    }
 
-	ctor.prototype = parent.prototype;
-	child.prototype = new ctor();
+    ctor.prototype = parent.prototype;
+    child.prototype = new ctor();
 
-	if (protoProps) extend(child.prototype, protoProps);
+    if (protoProps) extend(child.prototype, protoProps);
 
-	child.prototype.constructor = child;
-	child.__super__ = parent.prototype;
-	return child;
+    child.prototype.constructor = child;
+    child.__super__ = parent.prototype;
+    return child;
 };
 
 function extend(target, ref) {
-	var name, value;
-	for ( name in ref ) {
-		value = ref[name];
-		if (value !== undefined) {
-			target[ name ] = value;
-		}
-	}
-	return target;
+    var name, value;
+    for (name in ref) {
+        value = ref[name];
+        if (value !== undefined) {
+            target[name] = value;
+        }
+    }
+    return target;
 };
 
 var Undo = {
-	version: '0.1.15'
+    version: '0.1.15'
 };
 
-Undo.Stack = function() {
-	this.commands = [];
-	this.stackPosition = -1;
-	this.savePosition = -1;
+Undo.Stack = function () {
+    this.commands = [];
+    this.stackPosition = -1;
+    this.savePosition = -1;
 };
 
 extend(Undo.Stack.prototype, {
-	execute: function(command) {
-		this._clearRedo();
-		command.execute();
-		this.commands.push(command);
-		this.stackPosition++;
-		this.changed();
-	},
-	undo: function() {
-		this.commands[this.stackPosition].undo();
-		this.stackPosition--;
-		this.changed();
-	},
-	canUndo: function() {
-		return this.stackPosition >= 0;
-	},
-	redo: function() {
-		this.stackPosition++;
-		this.commands[this.stackPosition].redo();
-		this.changed();
-	},
-	canRedo: function() {
-		return this.stackPosition < this.commands.length - 1;
-	},
-	save: function() {
-		this.savePosition = this.stackPosition;
-		this.changed();
-	},
-	dirty: function() {
-		return this.stackPosition != this.savePosition;
-	},
-	_clearRedo: function() {
-		this.commands.splice(this.stackPosition + 1);
-	},
-	changed: function() {
-		// do nothing, override
-	}
+    reset: function () {
+        this.commands = [];
+        this.stackPosition = -1;
+        this.savePosition = -1;
+    },
+    execute: function (command) {
+        this._clearRedo();
+        command.execute();
+        this.commands.push(command);
+        this.stackPosition++;
+        this.changed();
+    },
+    undo: function () {
+        this.commands[this.stackPosition].undo();
+        this.stackPosition--;
+        this.changed();
+    },
+    canUndo: function () {
+        return this.stackPosition >= 0;
+    },
+    redo: function () {
+        this.stackPosition++;
+        this.commands[this.stackPosition].redo();
+        this.changed();
+    },
+    canRedo: function () {
+        return this.stackPosition < this.commands.length - 1;
+    },
+    save: function () {
+        this.savePosition = this.stackPosition;
+        this.changed();
+    },
+    dirty: function () {
+        return this.stackPosition != this.savePosition;
+    },
+    _clearRedo: function () {
+        this.commands.splice(this.stackPosition + 1);
+    },
+    changed: function () {
+        // do nothing, override
+    }
 });
 
-Undo.Command = function(name) {
-	this.name = name;
+Undo.Command = function (name) {
+    this.name = name;
 }
 
 var up = new Error("override me!");
 
 extend(Undo.Command.prototype, {
-	execute: function() {
-		throw up;
-	},
-	undo: function() {
-		throw up;
-	},
-	redo: function() {
-		this.execute();
-	}
+    execute: function () {
+        throw up;
+    },
+    undo: function () {
+        throw up;
+    },
+    redo: function () {
+        this.execute();
+    }
 });
 
-Undo.Command.extend = function(protoProps) {
-	var child = inherits(this, protoProps);
-	child.extend = Undo.Command.extend;
-	return child;
+Undo.Command.extend = function (protoProps) {
+    var child = inherits(this, protoProps);
+    child.extend = Undo.Command.extend;
+    return child;
 };
 
 // custom undo/redo handler
@@ -108,14 +115,16 @@ Undo.Command.extend = function(protoProps) {
 
 var stack = new Undo.Stack();
 
-
-
 stack.changed = () => {
     $('#undo').prop('disabled', !stack.canUndo());
     $('#redo').prop('disabled', !stack.canRedo());
     setHighlightElement(highlightedElement);
-    if (!stack.canRedo())
-        sessionStorage['webgen-workspace'] = generateCleanExportedHtml();
+    var html = generateCleanExportedHtml();
+    watchedLastCleanHtmlExport = html;
+    sessionStorage['webgen-workspace'] = html;
+    if (watchedWindow) {
+        watchedWindowDirty = true;
+    }
 }
 var CombineCommand = Undo.Command.extend({
     constructor: function (...commands) {
@@ -201,7 +210,7 @@ var NodeListCommand = Undo.Command.extend({
         }
         for (let i = 0; i < this.removed.length; i++) {
             const element = this.removed[i];
-            this.target.insertBefore(element, i.before);
+            this.target.insertBefore(element, this.before);
         }
     },
     redo: function () {
@@ -211,7 +220,7 @@ var NodeListCommand = Undo.Command.extend({
         }
         for (let i = 0; i < this.added.length; i++) {
             const element = this.added[i];
-            this.target.insertBefore(element, i.before);
+            this.target.insertBefore(element, this.before);
         }
     }
 });

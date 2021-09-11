@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>FrontGen</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" />
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.62.3/codemirror.min.css" />
@@ -36,7 +36,8 @@
         <div class="btn-group-vertical bg-light pe-1" id="toolbar">
             <button class="btn btn-outline-secondary" onclick="toggleSrcView()" id="btn-srcview"
                 title="Toggle Source Code"><i class="fas fa-2x fa-file-code"></i></button>
-
+            <button class="btn btn-outline-secondary" onclick="formatDoc('view')" id="btn-view" title="Open View"><i
+                    class="fas fa-2x fa-external-link-square-alt"></i></button>
             <div class="btn-group dropend flex-grow-1" role="group">
                 <div class="btn-group-vertical">
                     <button class="btn btn-outline-secondary" onclick="setSelUpward(1)" title="Select Upward"><i
@@ -83,23 +84,31 @@
                     class="fas fa-2x fa-chevron-up"></i></button>
             <button class="btn btn-outline-secondary" onclick="setMoveUpward(1)" title="Move Selection Downward"><i
                     class="fas fa-2x fa-chevron-down"></i></button>
+
+            <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal"
+                data-bs-target="#createModal">
+                <i class="fas fa-2x fa-folder-open"></i>
+            </button>
         </div>
         <div id="workspace">
 
             <div id="tooltxt" class="btn-toolbar bg-light">
                 <div class="btn-group m-1">
-                    <button class="btn btn-sm btn-outline-secondary" id="undo" onclick="formatDoc('undo');"><i
-                            class="fas fa-undo"></i></button>
-                    <button class="btn btn-sm btn-outline-secondary" id="redo" onclick="formatDoc('redo');"><i
-                            class="fas fa-redo"></i></button>
-                    <button class="btn btn-sm btn-outline-secondary" id="selectall" onclick="formatDoc('selectall');"><i
-                            class="fas fa-object-group"></i></button>
-                    <button class="btn btn-sm btn-outline-secondary" id="copy" onclick="formatDoc('copy');"><i
-                            class="fas fa-copy"></i></button>
-                    <button class="btn btn-sm btn-outline-secondary" id="cut" onclick="formatDoc('cut');"><i
+                    <button class="btn btn-sm btn-outline-secondary" id="undo" title="Undo"
+                        onclick="formatDoc('undo');"><i class="fas fa-undo"></i></button>
+                    <button class="btn btn-sm btn-outline-secondary" id="redo" title="Redo"
+                        onclick="formatDoc('redo');"><i class="fas fa-redo"></i></button>
+                    <button class="btn btn-sm btn-outline-secondary" id="selectall" title="Select Contents"
+                        onclick="formatDoc('selectall');"><i class="fas fa-object-group"></i></button>
+                    <button class="btn btn-sm btn-outline-secondary" id="selectall" title="Clone Element"
+                        onclick="formatDoc('clone');"><i class="fas fa-clone"></i></button>
+                    <button class="btn btn-sm btn-outline-secondary" id="copy" title="Copy"
+                        onclick="formatDoc('copy');"><i class="fas fa-copy"></i></button>
+                    <button class="btn btn-sm btn-outline-secondary" id="cut" title="Cut" onclick="formatDoc('cut');"><i
                             class="fas fa-cut"></i></button>
-                    <button class="btn btn-sm btn-outline-secondary" id="paste" onclick="formatDoc('paste');"><i
-                            class="fas fa-paste"></i></button>
+                    <button class="btn btn-sm btn-outline-secondary" id="paste" title="Paste"
+                        onclick="formatDoc('paste');"><i class="fas fa-paste"></i></button>
+
                 </div>
                 <div class="btn-group m-1">
                     <div class="btn-group" role="group">
@@ -199,12 +208,12 @@
                 <div class="modal-body">
                     <div class="mb-3">
                         <label for="imageurl">Insert Image URL</label>
-                        <input type="text" id="imageurl" onchange="insertImageByUrlForm.call(this)"
+                        <input type="text" class="form-control" id="imageurl" onchange="insertImageByUrlForm.call(this)"
                             placeholder="https://...">
                     </div>
                     <div class="mb-3">
                         <label for="">Or Drop an image Here</label>
-                        <input type="file" onchange="insertImageByFileForm.call(this)">
+                        <input type="file" class="form-control" onchange="insertImageByFileForm.call(this)">
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -212,6 +221,47 @@
                 </div>
             </form>
         </div>
+    </div>
+
+    <div class="modal fade" id="createModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Start a New Page</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col">
+                            <h2>From template</h2>
+                            <div class="list-group" id="templates"></div>
+                        </div>
+                        <div class="col">
+                            <h2>From existing web</h2>
+                            <form onsubmit="setNewByForm(event)">
+                                <div class="mb-3">
+                                    <label for="">HTML code</label>
+                                    <textarea name="html" class="form-control font-monospace" rows="7"></textarea>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="">Base URL (optional)</label>
+                                    <input name="base" class="form-control">
+                                </div>
+                                <button class="btn btn-primary">Create new</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <div class="me-auto">
+                        <iframe src="https://ghbtns.com/github-btn.html?user=willnode&repo=frontgen&type=star&count=true&size=large" frameborder="0" sandbox="allow-scripts allow-popups" scrolling="0" width="170" height="30" title="GitHub"></iframe>
+                    </div>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+        <!-- Place this tag in your head or just before your close body tag. -->
+        <script async defer src="https://buttons.github.io/buttons.js"></script>
     </div>
 </body>
 

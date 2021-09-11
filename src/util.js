@@ -22,12 +22,12 @@
     };
 })(jQuery);
 
-function getCoords( /** @type {HTMLElement} */ elem) {
+function getCoords( /** @type {HTMLElement} */ elem, /** @type {Document} */ doc) {
     var box = elem.getBoundingClientRect();
     return {
         width: box.width,
         height: box.height,
-        top: box.top + workdoc().documentElement.scrollTop,
+        top: box.top + doc.documentElement.scrollTop,
         left: box.left,
     };
 }
@@ -43,8 +43,10 @@ function generateHtml( /** @type {string} */ emmet) {
 
 function generateCleanExportedHtml() {
     var html = workdoc().documentElement.innerHTML;
-    html = html.replace(/<div.+?WebGenInternalBeaconDontEdit.+?<\/div>/g, '');
-    return html_beautify(html);
+    html = html.replace(/<div.+?WebGenInternal.+?<\/div>/g, '');
+    return html_beautify(html, {
+        indent_size: 2
+    });
 }
 
 function isInline(str) {
@@ -79,9 +81,13 @@ function renderComponents(components) {
     )
 }
 
+function renderTemplatesBtn(templates) {
+    return templates.map((x, i) => $(`<button class="list-group-item list-group-item-action">`).text(x.name).on('click', () => setNewByTemplate(i)))
+}
+
 function getNickName( /** @type {HTMLElement} */ el) {
     var s = el.tagName.toLowerCase();
-    var c = el.className ? '.' + el.className.replace(/ /g, '.') : '';
+    var c = el.className && typeof el.className === 'string' ? '.' + ("" + el.className).replace(/ /g, '.') : '';
     var i = el.id ? '#' + el.id : '';
     return s + c + i;
 }
@@ -161,10 +167,10 @@ const attributes = {
         name: 'disabled',
         type: toCheckBox
     }],
-    textarea: ['name', 'placeholder',  {
+    textarea: ['name', 'placeholder', {
         name: 'disabled',
         type: toCheckBox
-    },  {
+    }, {
         name: 'readonly',
         type: toCheckBox
     }],
